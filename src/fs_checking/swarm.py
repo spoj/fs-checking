@@ -360,7 +360,9 @@ spawn("bs", "Check balance sheet", ["Page 1", "Page 2"])
 spawn("pl", "Check P&L", ["Page 3"])
 ```
 
-After spawns, read() to verify. Use continue() for corrections.
+**IMPORTANT:** Include any schema/format requirements in spawn prompts. Sub-agents only see their prompt, not yours.
+
+After spawns, read() to verify structure and content. Use continue() for corrections.
 """
 
 SYSTEM_PROMPT_ROOT = """
@@ -370,7 +372,11 @@ You orchestrate sub-agents. Create workspace structures as needed:
 ```json
 {"op": "add", "path": "/workspace", "value": {"ledger": [], "note_map": {}}}
 ```
-Clean up when done: `{"op": "remove", "path": "/workspace"}`
+
+**Before finishing:**
+1. read() and verify sub-agent output matches required schema
+2. Fix/normalize any inconsistent structures
+3. Clean up: `{"op": "remove", "path": "/workspace"}`
 """
 
 SYSTEM_PROMPT_INTROSPECTION = """
@@ -750,21 +756,26 @@ async def run_swarm(
 
 Verify internal consistency and mathematical accuracy.
 
-## Output
+## Check Schema (STRICT)
 
-Add checks to `/checks` array:
+Every check in `/checks` MUST have exactly these fields:
 ```json
-{"id": "...", "category": "cross_footing|internal_consistency|note_ties", 
- "status": "pass|fail|warn", "expected": N, "actual": N, "difference": N, 
- "reason": "...", "page": N}
+{"id": "bs_crossfoot_2023", "category": "cross_footing", "status": "pass",
+ "expected": 1234, "actual": 1234, "difference": 0, "description": "...", "page": 3}
 ```
+- **id**: unique snake_case identifier
+- **category**: cross_footing | internal_consistency | note_ties
+- **status**: pass | fail | warn
+- **expected/actual/difference**: numbers (use null if N/A)
+- **description**: what was checked
+- **page**: page number
 
-Store extracted values in `/values` (e.g., `/values/balance_sheet/total_assets`).
+**When delegating, include this schema in spawn prompts.** Sub-agents don't see your instructions.
 
 ## Check Types
 
-- **cross_footing**: Totals add up (revenue - expenses = profit, subtotals correct)
-- **internal_consistency**: Assets = Liabilities + Equity, CF ties to BS cash
+- **cross_footing**: Totals add up (subtotals, row sums)
+- **internal_consistency**: A=L+E, CF cash ties to BS cash
 - **note_ties**: Note totals match statement line items
 
 Delegate by statement/section. Record ALL checks including passes."""
