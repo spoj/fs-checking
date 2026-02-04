@@ -800,33 +800,69 @@ async def run_swarm(
 
     default_prompt = """## IFRS Financial Statement Verification
 
-Verify internal consistency and mathematical accuracy.
+Verify internal consistency and mathematical accuracy. Be THOROUGH - check every subtotal, every note tie, every rollforward.
 
 ## Check Schema (STRICT)
 
 Every check MUST have exactly these fields:
 ```python
 state.setdefault('checks', []).append({
-    "id": "bs_crossfoot_2023",      # unique snake_case
+    "id": "bs_total_assets_2023",   # unique snake_case with year
     "category": "cross_footing",     # cross_footing | internal_consistency | note_ties
     "status": "pass",                # pass | fail | warn
-    "expected": 1234,                # number or null
-    "actual": 1234,                  # number or null
-    "difference": 0,                 # number or null
-    "description": "Total assets crossfoot 2023",
+    "expected": 1234,                # calculated value
+    "actual": 1234,                  # stated value in document
+    "difference": 0,                 # expected - actual
+    "description": "Total assets = sum of all asset lines",
     "page": 3
 })
 ```
 
-**When delegating, include this schema in spawn prompts.** Sub-agents don't see your instructions.
+**When delegating, COPY this schema into spawn prompts.** Sub-agents don't see your instructions.
 
-## Check Types
+## Required Checks by Statement
 
-- **cross_footing**: Totals add up (subtotals, row sums)
-- **internal_consistency**: A=L+E, CF cash ties to BS cash
-- **note_ties**: Note totals match statement line items
+### Balance Sheet
+- All subtotals cross-foot (non-current assets, current assets, etc.)
+- Total Assets = Total Liabilities + Equity (both years)
+- Net current assets/liabilities calculation
+- Prior year comparatives match
 
-Delegate by statement/section. Record ALL checks including passes."""
+### P&L / Income Statement  
+- Gross profit = Revenue - Cost of sales
+- Operating profit = Gross profit - Operating expenses
+- All subtotals and totals cross-foot
+- Note 4 (Operating profit) ties to P&L line items
+
+### OCI (Other Comprehensive Income)
+- Subtotals for items that will/won't be reclassified
+- Total comprehensive income = Net profit + OCI
+
+### Cash Flow Statement
+- Operating/Investing/Financing subtotals cross-foot
+- Net change in cash = Op + Inv + Fin
+- Closing cash = Opening + Net change
+- Closing cash ties to Balance Sheet cash
+
+### Notes Verification
+- **Note rollforwards**: Opening + Additions - Disposals = Closing (PPE, provisions, etc.)
+- **Note ties**: Note totals match corresponding line items on face of statements
+- **Internal math**: All subtotals within notes cross-foot
+- **Look for $100k or round number discrepancies** - often indicate missing entries
+
+### Cross-Statement Consistency
+- Net profit in P&L = Net profit in OCI = Net profit in Cash Flow reconciliation
+- Closing cash in CF = Cash in BS
+- Retained earnings movement ties to net profit
+
+## Delegation Strategy
+
+Spawn by major section:
+- P&L + OCI + Note 4 (operating expenses)
+- Balance Sheet + PPE notes + Receivables notes
+- Cash Flow + Note 31 (cash flow reconciliation)
+
+Each sub-agent should check EVERY number, not just totals. Record ALL checks including passes."""
 
     start = time.time()
     usage = await run_agent(ctx, prompt or default_prompt)
