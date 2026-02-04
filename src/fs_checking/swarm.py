@@ -158,7 +158,8 @@ def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None)
 
     original_state = variables.get("state")
 
-    global_ns = {"__builtins__": safe_builtins, **helpers}
+    # Put state in globals so functions defined in eval can access it
+    global_ns = {"__builtins__": safe_builtins, **helpers, **variables}
 
     code = code.strip()
     is_single_line = "\n" not in code
