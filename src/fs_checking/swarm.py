@@ -150,16 +150,17 @@ def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None)
     }
 
     # Use persistent_locals as actual namespace, or create fresh one
-    local_ns = persistent_locals if persistent_locals is not None else {}
+    ns = persistent_locals if persistent_locals is not None else {}
+
+    # Inject builtins and helpers
+    ns["__builtins__"] = safe_builtins
+    ns.update(helpers)
 
     # Inject variables (state, etc.) - always update to get fresh references
     for k, v in variables.items():
-        local_ns[k] = v
+        ns[k] = v
 
     original_state = variables.get("state")
-
-    # Put state in globals so functions defined in eval can access it
-    global_ns = {"__builtins__": safe_builtins, **helpers, **variables}
 
     code = code.strip()
     is_single_line = "\n" not in code
@@ -167,14 +168,15 @@ def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None)
     if is_single_line:
         # Single line: try as expression first
         try:
-            result = eval(code, global_ns, local_ns)
+            result = eval(code, ns, ns)
         except SyntaxError:
             # Statement like assignment
-            exec(code, global_ns, local_ns)
+            exec(code, ns, ns)
             result = None
     else:
-        # Multi-line: exec
-        exec(code, global_ns, local_ns)
+        # Multi-line: exec using same dict for globals and locals
+        # This gives "normal" Python scoping - functions can see all variables
+        exec(code, ns, ns)
         result = None
 
     # Check for state.clear() - simple string detection
