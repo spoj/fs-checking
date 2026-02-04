@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IFRS Financial Statement Check Result",
+  "description": "Output schema for IFRS financial statement checking swarm",
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "description": "Document metadata extracted from the financial statements",
+      "properties": {
+        "company": {"type": "string"},
+        "period": {"type": "string", "description": "Reporting period, e.g. 'Year ended 31 December 2024'"},
+        "currency": {"type": "string", "description": "Presentation currency, e.g. 'USD', 'EUR'"},
+        "framework": {"type": "string", "description": "Reporting framework, e.g. 'IFRS', 'IFRS for SMEs'"},
+        "pages": {"type": "integer"}
+      }
+    },
+    "checks": {
+      "type": "array",
+      "description": "All checks performed by the swarm",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique check identifier, e.g. 'sofp_total_assets_crossfoot', 'pl_revenue_subtotal'"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["cross_footing", "internal_consistency", "note_ties", "period_comparison", "rounding", "note_numbering"],
+            "description": "Check category"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "warn"],
+            "description": "Check result"
+          },
+          "evidence": {
+            "type": "string",
+            "enum": ["strong", "moderate", "weak"],
+            "description": "Confidence in the check based on source visibility"
+          },
+          "expected": {
+            "description": "Expected value (if applicable)"
+          },
+          "actual": {
+            "description": "Actual value found (if applicable)"
+          },
+          "difference": {
+            "type": "number",
+            "description": "Numeric difference for math checks"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Human-readable explanation of the check result"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Which agent performed this check"
+          },
+          "page": {
+            "type": "integer",
+            "description": "Source page number"
+          }
+        },
+        "required": ["id", "category", "status", "reason"]
+      }
+    },
+    "values": {
+      "type": "object",
+      "description": "Extracted values for cross-reference",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "The extracted value"
+          },
+          "page": {
+            "type": "integer",
+            "description": "Source page"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Which agent extracted this"
+          }
+        }
+      }
+    }
+  },
+  "required": ["metadata", "checks", "values"]
+}
