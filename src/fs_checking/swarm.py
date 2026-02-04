@@ -57,8 +57,13 @@ def get_semaphore() -> asyncio.Semaphore:
 def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None) -> Any:
     """Execute Python code with restricted builtins.
 
+    Behavior:
     - Single-line: evaluated as expression, returns value
-    - Multi-line: executed as statements, returns None (use print() for output)
+    - Multi-line: executed as statements, returns None (caller shows "OK")
+    - Rebind detection: caller checks if state was rebound
+    - state.clear() blocked: raises error
+    - print(): no-op (use expressions to see values)
+    - Local vars: don't persist between calls
 
     Args:
         code: Python code to execute
@@ -66,60 +71,113 @@ def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None)
         persistent_locals: If provided, locals are stored here for rebind detection
     """
     safe_builtins = {
+        # Constants
+        "None": None,
+        "True": True,
+        "False": False,
         # Types
-        "len": len,
-        "str": str,
         "int": int,
         "float": float,
+        "str": str,
         "bool": bool,
         "list": list,
         "dict": dict,
-        "set": set,
         "tuple": tuple,
+        "set": set,
+        "bytes": bytes,
         # Iteration
-        "sorted": sorted,
-        "reversed": reversed,
+        "len": len,
+        "range": range,
         "enumerate": enumerate,
         "zip": zip,
         "map": map,
         "filter": filter,
-        "range": range,
+        "sorted": sorted,
+        "reversed": reversed,
+        "next": next,
+        "iter": iter,
         # Aggregation
         "sum": sum,
         "min": min,
         "max": max,
-        "abs": abs,
-        "round": round,
         "any": any,
         "all": all,
+        "abs": abs,
+        "round": round,
+        "pow": pow,
         # Introspection
         "isinstance": isinstance,
         "type": type,
         "hasattr": hasattr,
         "getattr": getattr,
-        # Constants
-        "None": None,
-        "True": True,
-        "False": False,
-        # Math
+        "callable": callable,
+        # Formatting
+        "repr": repr,
+        "format": format,
+        # Math module
         "math": math,
         # Collections
         "Counter": Counter,
+        # Print as no-op
+        "print": lambda *args, **kwargs: None,
+        # Exceptions (for try/except)
+        "Exception": Exception,
+        "ValueError": ValueError,
+        "TypeError": TypeError,
+        "KeyError": KeyError,
+        "IndexError": IndexError,
+    }
+
+    # Helper functions
+    def group_by(iterable, key_fn):
+        """Group items by key function or dict key."""
+        result = {}
+        for item in iterable:
+            k = key_fn(item) if callable(key_fn) else item.get(key_fn)
+            result.setdefault(k, []).append(item)
+        return result
+
+    def pluck(iterable, key):
+        """Extract a key from each item."""
+        return [
+            item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+            for item in iterable
+        ]
+
+    helpers = {
+        "group_by": group_by,
+        "pluck": pluck,
     }
 
     local_ns = {}
     for k, v in variables.items():
         local_ns.setdefault(k, v)
 
-    global_ns = {"__builtins__": safe_builtins}
+    original_state = variables.get("state")
 
-    # Detect if single expression or statements
-    try:
-        result = eval(code, global_ns, local_ns)
-    except SyntaxError:
-        # Multi-line or statements - use exec
+    global_ns = {"__builtins__": safe_builtins, **helpers}
+
+    code = code.strip()
+    is_single_line = "\n" not in code
+
+    if is_single_line:
+        # Single line: try as expression first
+        try:
+            result = eval(code, global_ns, local_ns)
+        except SyntaxError:
+            # Statement like assignment
+            exec(code, global_ns, local_ns)
+            result = None
+    else:
+        # Multi-line: exec
         exec(code, global_ns, local_ns)
         result = None
+
+    # Check for state.clear() - simple string detection
+    if "state.clear()" in code or "state.clear ()" in code:
+        raise RuntimeError(
+            "state.clear() is not allowed. Use del state['key'] or state.pop('key') instead."
+        )
 
     # Store locals for rebind detection
     if persistent_locals is not None:
@@ -128,18 +186,36 @@ def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None)
     return result
 
 
-def format_preview(value: Any, max_len: int = 15000) -> str:
-    """Format value as JSON with truncation if needed."""
+def format_preview(value: Any, max_len: int = 10000) -> str:
+    """Format value with smart truncation.
+
+    - None → "OK"
+    - Small values → full JSON
+    - Large values → truncated with count hint
+    """
     if value is None:
         return "OK"
-    try:
-        result = json.dumps(value, indent=2, ensure_ascii=False)
-    except (TypeError, ValueError):
-        result = str(value)
 
-    if len(result) > max_len:
-        return result[:max_len] + "\n... (truncated)"
-    return result
+    try:
+        s = json.dumps(value, indent=2, ensure_ascii=False)
+    except (TypeError, ValueError):
+        s = str(value)
+
+    if len(s) <= max_len:
+        return s
+
+    # Smart truncation: show what was truncated
+    truncated = s[:max_len]
+
+    # Try to figure out what type and count
+    if isinstance(value, list):
+        hint = f"list with {len(value)} items"
+    elif isinstance(value, dict):
+        hint = f"dict with {len(value)} keys"
+    else:
+        hint = f"{len(s)} chars total"
+
+    return f"{truncated}\n\n... TRUNCATED ({hint}). Data saved to state. Use eval() to inspect specific parts."
 
 
 # === Shared State ===
@@ -272,29 +348,32 @@ You are an agent in a SWARM. Multiple agents work concurrently on shared JSON st
 
 **eval(code)** - Execute Python on shared `state` dict. Use for reads AND writes.
 
-IMPORTANT: MUTATE `state`, don't rebind it. Variables don't persist between evals.
+| Code type | Result |
+|-----------|--------|
+| Single-line expression | Returns value |
+| Multi-line statements | Returns "OK" |
 
 Read examples:
 - `eval("state")` - full state
-- `eval("list(state.keys())")` - structure discovery
+- `eval("list(state.keys())")` - structure discovery  
 - `eval("state.get('checks', [])")` - subtree with default
-- `eval("len(state.get('checks', []))")` - count items
+- `eval("len(state.get('checks', []))")` - count
 - `eval("[c for c in state['checks'] if c['status']=='fail']")` - filter
+- `eval("1234 + 5678")` - arithmetic
 
 Write examples:
-- `eval("state['metadata'] = {'company': 'ABC', 'year': 2023}")`
-- `eval("state.setdefault('checks', []).append({'id': 'test', ...})")`
-- `eval("state['values']['total'] = 12345")`
+- `eval("state['metadata'] = {'company': 'ABC'}")` → "OK"
+- `eval("state.setdefault('checks', []).append({...})")` → "OK"
 
-Arithmetic (also via eval):
-- `eval("1234567 + 890123 - 45678")`
-- `eval("abs(expected - actual)")`
+IMPORTANT:
+- MUTATE `state`, don't rebind: `state['x'] = 1` not `state = {'x': 1}`
+- Variables don't persist between eval() calls
+- print() is a no-op; use expressions to see values
 
 ## Rules
 
 - eval() to read FIRST before writing
-- Use existing structure, don't recreate
-- Use setdefault() + append() for safe concurrent array writes
+- Use setdefault() + append() for safe concurrent writes
 - If something fails, re-read and adapt
 
 Final message (no tool calls) = summary for parent.
