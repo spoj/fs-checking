@@ -561,6 +561,18 @@ async def run_agent(
     return ctx.usage
 
 
+def _now() -> str:
+    """Get current wall clock time as HH:MM:SS."""
+    from datetime import datetime
+
+    return datetime.now().strftime("%H:%M:%S")
+
+
+def _prefix_time(content: str) -> str:
+    """Prefix content with wall clock time."""
+    return f"[{_now()}] {content}"
+
+
 async def process_tool_calls(ctx: AgentContext, tool_calls: list[dict]) -> list[dict]:
     """Process tool calls, running spawns/continues in parallel."""
 
@@ -705,6 +717,10 @@ async def process_tool_calls(ctx: AgentContext, tool_calls: list[dict]) -> list[
             results.append({"role": "tool", "tool_call_id": tc_id, "content": content})
             ctx.usage["prompt_tokens"] += sub_usage.get("prompt_tokens", 0)
             ctx.usage["completion_tokens"] += sub_usage.get("completion_tokens", 0)
+
+    # Prefix all results with wall clock time
+    for r in results:
+        r["content"] = _prefix_time(r["content"])
 
     return results
 
