@@ -4,7 +4,7 @@ Adapted from tech_pack_study/strategies/swarm.py for financial statement validat
 
 Key features:
 - Multiple agents work CONCURRENTLY on shared JSON state
-- JSON Patch (RFC 6902) for state modifications
+- Single eval() tool for reads AND writes (under lock)
 - Hierarchical delegation with spawn(handle, prompt, pages)
 - Sub-agent continuation with continue(handle, prompt)
 - Scoped handles - no global namespace collision
@@ -14,8 +14,6 @@ Check categories:
 - cross_footing: Row/column totals verify
 - internal_consistency: A=L+E, CF ties to BS, etc.
 - note_ties: Note values match statement values
-- period_comparison: YoY/QoQ variance reasonableness
-- rounding: Consistent precision, no rounding errors
 
 Usage:
     python -m scripts.cli document.pdf -o checks.json
@@ -23,16 +21,16 @@ Usage:
 
 import asyncio
 import base64
-import copy
 import json
+import math
 import os
+import re
 import sys
 import time
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-
-import jsonpatch
 
 from .api import OpenRouterClient
 from .pdf_utils import pdf_to_images
@@ -53,61 +51,22 @@ def get_semaphore() -> asyncio.Semaphore:
     return _semaphore
 
 
-# === JSON Patch ===
+# === Safe Exec ===
 
 
-def resolve_path(obj: dict | list, path: str) -> tuple[Any, bool]:
-    """Resolve JSON pointer path to value. Returns (value, exists)."""
-    if path == "" or path == "/":
-        return obj, True
-    parts = path.strip("/").split("/")
-    current = obj
-    for part in parts:
-        if isinstance(current, dict):
-            if part not in current:
-                return None, False
-            current = current[part]
-        elif isinstance(current, list):
-            try:
-                idx = int(part)
-                if idx < 0 or idx >= len(current):
-                    return None, False
-                current = current[idx]
-            except ValueError:
-                return None, False
-        else:
-            return None, False
-    return current, True
+def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None) -> Any:
+    """Execute Python code with restricted builtins.
 
+    - Single-line: evaluated as expression, returns value
+    - Multi-line: executed as statements, returns None (use print() for output)
 
-def apply_patch(state: dict, operations: list[dict]) -> tuple[bool, str]:
-    """Apply JSON Patch operations to state."""
-    try:
-        patch = jsonpatch.JsonPatch(operations)
-        result = patch.apply(state)
-        state.clear()
-        state.update(result)
-        return True, ""
-    except Exception as e:
-        return False, f"{type(e).__name__}: {e}"
-
-
-# === Shared State ===
-
-
-def get_structure(obj: Any) -> Any:
-    """Get structure summary: keys for dicts, length for arrays, type for primitives."""
-    if isinstance(obj, dict):
-        return {k: get_structure(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return f"[{len(obj)} items]"
-    else:
-        return type(obj).__name__
-
-
-def safe_exec(code: str, local_vars: dict) -> Any:
-    """Safely execute Python code with limited builtins."""
+    Args:
+        code: Python code to execute
+        variables: Variables to inject (e.g., {"state": {...}})
+        persistent_locals: If provided, locals are stored here for rebind detection
+    """
     safe_builtins = {
+        # Types
         "len": len,
         "str": str,
         "int": int,
@@ -117,12 +76,15 @@ def safe_exec(code: str, local_vars: dict) -> Any:
         "dict": dict,
         "set": set,
         "tuple": tuple,
+        # Iteration
         "sorted": sorted,
         "reversed": reversed,
         "enumerate": enumerate,
         "zip": zip,
         "map": map,
         "filter": filter,
+        "range": range,
+        # Aggregation
         "sum": sum,
         "min": min,
         "max": max,
@@ -130,32 +92,75 @@ def safe_exec(code: str, local_vars: dict) -> Any:
         "round": round,
         "any": any,
         "all": all,
-        "range": range,
+        # Introspection
         "isinstance": isinstance,
         "type": type,
+        "hasattr": hasattr,
+        "getattr": getattr,
+        # Constants
         "None": None,
         "True": True,
         "False": False,
+        # Math
+        "math": math,
+        # Collections
+        "Counter": Counter,
     }
-    return eval(code, {"__builtins__": safe_builtins}, local_vars)
+
+    local_ns = {}
+    for k, v in variables.items():
+        local_ns.setdefault(k, v)
+
+    global_ns = {"__builtins__": safe_builtins}
+
+    # Detect if single expression or statements
+    try:
+        result = eval(code, global_ns, local_ns)
+    except SyntaxError:
+        # Multi-line or statements - use exec
+        exec(code, global_ns, local_ns)
+        result = None
+
+    # Store locals for rebind detection
+    if persistent_locals is not None:
+        persistent_locals.update(local_ns)
+
+    return result
 
 
 def format_preview(value: Any, max_len: int = 15000) -> str:
     """Format value as JSON with truncation if needed."""
+    if value is None:
+        return "OK"
     try:
         result = json.dumps(value, indent=2, ensure_ascii=False)
-        if len(result) > max_len:
-            result = result[:max_len] + "\n... (truncated)"
-        return result
     except (TypeError, ValueError):
         result = str(value)
-        if len(result) > max_len:
-            result = result[:max_len] + "... (truncated)"
-        return result
+
+    if len(result) > max_len:
+        return result[:max_len] + "\n... (truncated)"
+    return result
+
+
+# === Shared State ===
 
 
 class SharedState:
-    """Thread-safe shared JSON state for all agents."""
+    """Thread-safe shared JSON state for all agents.
+
+    Eval semantics:
+    - Each eval() call runs under lock - atomic read-modify-write
+    - Only mutations to `state` persist (it's the same dict object across all evals)
+    - Local variables do NOT persist between eval calls
+    - Rebinding `state` (e.g., `state = {...}`) is detected and returns an error
+
+    Examples:
+        eval("state")                          # read full state
+        eval("state.get('checks', [])")        # read with default
+        eval("state['metadata'] = {...}")      # write
+        eval("state.setdefault('checks', []).append({...})")  # atomic append
+        eval("state = {'a': 1}")               # ERROR: rebinding detected
+    """
 
     def __init__(self):
         self.state: dict = {
@@ -164,28 +169,34 @@ class SharedState:
             "values": {},
         }
         self.lock = asyncio.Lock()
-        self.patch_log: list[dict] = []
+        self.eval_log: list[dict] = []
 
-    async def eval(self, code: str) -> str:
-        """Read-only eval on state snapshot."""
+    async def eval(self, code: str, agent_path: str = "") -> str:
+        """Execute Python on state (reads and writes) under lock."""
         async with self.lock:
-            snapshot = copy.deepcopy(self.state)
+            local_ns = {}
+            try:
+                result = safe_exec(
+                    code,
+                    {"state": self.state},
+                    persistent_locals=local_ns,
+                )
+            except Exception as e:
+                return f"Error: {type(e).__name__}: {e}"
 
-        result = safe_exec(code, {"state": snapshot})
+            self.eval_log.append({"agent": agent_path, "code": code[:100]})
+
+            # Detect rebinding: if agent did `state = {...}`, local_ns["state"]
+            # is a NEW dict, not self.state. This loses their work silently.
+            if local_ns.get("state") is not self.state:
+                return (
+                    "Error: Rebinding 'state' loses your changes. Mutate instead:\n"
+                    "  state['key'] = value\n"
+                    "  state.update({...})\n"
+                    "  state.setdefault('key', []).append(...)"
+                )
+
         return format_preview(result)
-
-    async def patch(self, agent_path: str, operations: list[dict]) -> tuple[bool, str]:
-        async with self.lock:
-            success, error = apply_patch(self.state, operations)
-            self.patch_log.append(
-                {
-                    "agent": agent_path,
-                    "ops": len(operations),
-                    "success": success,
-                    "error": error if not success else None,
-                }
-            )
-            return success, error
 
 
 # === Tool Definitions ===
@@ -194,13 +205,13 @@ TOOL_SPAWN = {
     "type": "function",
     "function": {
         "name": "spawn",
-        "description": "Spawn a sub-agent for a subset of pages. Returns a handle you can use with continue(). Call multiple spawns in ONE turn for parallel execution.",
+        "description": "Spawn a sub-agent for a subset of pages. Returns a handle for continue(). Call multiple spawns in ONE turn for parallel execution.",
         "parameters": {
             "type": "object",
             "properties": {
                 "handle": {
                     "type": "string",
-                    "description": "Unique handle to reference this sub-agent (e.g., 'balance_sheet', 'income_statement')",
+                    "description": "Unique handle (e.g., 'balance_sheet', 'note_10')",
                 },
                 "prompt": {
                     "type": "string",
@@ -209,7 +220,7 @@ TOOL_SPAWN = {
                 "pages": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": 'Page labels for sub-agent, e.g. ["Page 1", "Page 2"]',
+                    "description": 'Page labels, e.g. ["Page 1", "Page 2"]',
                 },
             },
             "required": ["handle", "prompt", "pages"],
@@ -221,94 +232,32 @@ TOOL_CONTINUE = {
     "type": "function",
     "function": {
         "name": "continue",
-        "description": "Continue a previously spawned sub-agent with a follow-up prompt. The sub-agent retains its context and conversation history.",
+        "description": "Continue a previously spawned sub-agent with follow-up prompt.",
         "parameters": {
             "type": "object",
             "properties": {
-                "handle": {
-                    "type": "string",
-                    "description": "Handle of the sub-agent to continue",
-                },
-                "prompt": {
-                    "type": "string",
-                    "description": "Follow-up instruction or question",
-                },
+                "handle": {"type": "string", "description": "Handle of sub-agent"},
+                "prompt": {"type": "string", "description": "Follow-up instruction"},
             },
             "required": ["handle", "prompt"],
         },
     },
 }
 
-TOOL_READ = {
+TOOL_EVAL = {
     "type": "function",
     "function": {
-        "name": "read",
-        "description": "Read state using Python expression. Variable 'state' is the shared dict.",
+        "name": "eval",
+        "description": "Execute Python on shared state. Variable 'state' is the shared dict. Use for reads AND writes.",
         "parameters": {
             "type": "object",
             "properties": {
-                "expr": {
+                "code": {
                     "type": "string",
-                    "description": 'Python expression, e.g. \'state\', \'state.get("checks")\', \'len(state["checks"])\', \'[c for c in state["checks"] if c.get("status")=="fail"]\'',
+                    "description": "Python code. Examples: state.get('checks'), state['header'] = {...}, state.setdefault('checks', []).append({...}), 1234 + 5678",
                 },
             },
-            "required": ["expr"],
-        },
-    },
-}
-
-TOOL_PATCH = {
-    "type": "function",
-    "function": {
-        "name": "patch",
-        "description": "Apply JSON Patch operations to the shared state. Use to add checks and extracted values.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "operations": {
-                    "type": "array",
-                    "description": "JSON Patch operations (RFC 6902)",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "op": {
-                                "type": "string",
-                                "enum": [
-                                    "add",
-                                    "remove",
-                                    "replace",
-                                    "test",
-                                    "move",
-                                    "copy",
-                                ],
-                            },
-                            "path": {"type": "string"},
-                            "value": {},
-                            "from": {"type": "string"},
-                        },
-                        "required": ["op", "path"],
-                    },
-                },
-            },
-            "required": ["operations"],
-        },
-    },
-}
-
-TOOL_CALC = {
-    "type": "function",
-    "function": {
-        "name": "calc",
-        "description": "Evaluate arithmetic expression. Alias for read() with math focus.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "expr": {
-                    "type": "string",
-                    "description": "e.g. '1234567 + 890123 - 45678' or 'abs(100 - 150)'",
-                },
-            },
-            "required": ["expr"],
+            "required": ["code"],
         },
     },
 }
@@ -319,29 +268,34 @@ TOOL_CALC = {
 SYSTEM_PROMPT_CORE = """\
 You are an agent in a SWARM. Multiple agents work concurrently on shared JSON state.
 
-## Tools
+## Tool
 
-**read(expr)** - Read state via Python expression. Variable `state` is the shared dict.
-- `read("state")` - full state
-- `read("state.get('checks')")` - subtree
-- `read("list(state.keys())")` - structure discovery
-- `read("len(state['checks'])")` - counts
-- `read("[c for c in state['checks'] if c.get('status')=='fail']")` - filtering
+**eval(code)** - Execute Python on shared `state` dict. Use for reads AND writes.
 
-**patch(operations)** - JSON Patch (RFC 6902):
-- `{"op": "add", "path": "/key", "value": ...}` - add/create
-- `{"op": "add", "path": "/array/-", "value": ...}` - append to array
-- `{"op": "replace", "path": "/key", "value": ...}` - update existing
-- `{"op": "remove", "path": "/key"}` - delete
+IMPORTANT: MUTATE `state`, don't rebind it. Variables don't persist between evals.
 
-**calc(expr)** - Arithmetic: `calc("1234 + 5678 - 90")`. Supports +, -, *, /, abs(), round(), sum().
+Read examples:
+- `eval("state")` - full state
+- `eval("list(state.keys())")` - structure discovery
+- `eval("state.get('checks', [])")` - subtree with default
+- `eval("len(state.get('checks', []))")` - count items
+- `eval("[c for c in state['checks'] if c['status']=='fail']")` - filter
+
+Write examples:
+- `eval("state['metadata'] = {'company': 'ABC', 'year': 2023}")`
+- `eval("state.setdefault('checks', []).append({'id': 'test', ...})")`
+- `eval("state['values']['total'] = 12345")`
+
+Arithmetic (also via eval):
+- `eval("1234567 + 890123 - 45678")`
+- `eval("abs(expected - actual)")`
 
 ## Rules
 
-- read() FIRST before writing
+- eval() to read FIRST before writing
 - Use existing structure, don't recreate
-- Append to arrays with "/-" for safe concurrency
-- If patch fails, read() and adapt
+- Use setdefault() + append() for safe concurrent array writes
+- If something fails, re-read and adapt
 
 Final message (no tool calls) = summary for parent.
 """
@@ -356,27 +310,27 @@ SYSTEM_PROMPT_DELEGATION = """
 
 Spawn multiple in ONE turn:
 ```
-spawn("bs", "Check balance sheet", ["Page 1", "Page 2"])
-spawn("pl", "Check P&L", ["Page 3"])
+spawn("bs", "Check balance sheet...", ["Page 1", "Page 2"])
+spawn("pl", "Check P&L...", ["Page 3"])
 ```
 
-**IMPORTANT:** Include any schema/format requirements in spawn prompts. Sub-agents only see their prompt, not yours.
+**IMPORTANT:** Include schema/format requirements in spawn prompts. Sub-agents don't see your instructions.
 
-After spawns, read() to verify structure and content. Use continue() for corrections.
+After spawns, eval() to verify. Use continue() for corrections.
 """
 
 SYSTEM_PROMPT_ROOT = """
 ## Root Agent
 
 You orchestrate sub-agents. Create workspace structures as needed:
-```json
-{"op": "add", "path": "/workspace", "value": {"ledger": [], "note_map": {}}}
+```python
+eval("state['workspace'] = {'ledger': [], 'note_map': {}}")
 ```
 
 **Before finishing:**
-1. read() and verify sub-agent output matches required schema
+1. eval() to verify sub-agent output matches required schema
 2. Fix/normalize any inconsistent structures
-3. Clean up: `{"op": "remove", "path": "/workspace"}`
+3. Clean up: `eval("del state['workspace']")`
 """
 
 SYSTEM_PROMPT_INTROSPECTION = """
@@ -390,7 +344,6 @@ Final message must include:
    - What worked well in delegation/coordination?
    - What was inefficient or could be improved?
    - What changes to system/prompts/tools would help?
-   - Patterns noticed that could inform future runs?
 
 Be specific and actionable.
 """
@@ -410,7 +363,7 @@ def get_system_prompt(
 
 
 def get_tools(can_delegate: bool) -> list[dict]:
-    tools = [TOOL_READ, TOOL_PATCH, TOOL_CALC]
+    tools = [TOOL_EVAL]
     if can_delegate:
         tools = [TOOL_SPAWN, TOOL_CONTINUE] + tools
     return tools
@@ -552,44 +505,17 @@ async def process_tool_calls(ctx: AgentContext, tool_calls: list[dict]) -> list[
 
     results = []
 
-    # Handle read/patch calls
+    # Handle eval calls
     for tc, args in other_calls:
         name = tc["function"]["name"]
 
-        if name == "read":
-            expr = args.get("expr", "state")
-            try:
-                content = await ctx.shared_state.eval(expr)
-                ctx.log(f"read({expr[:30]}) -> {len(content)} chars")
-            except Exception as e:
-                content = f"Error: {e}"
-                ctx.log(f"read() -> ERROR: {e}")
-            results.append(
-                {"role": "tool", "tool_call_id": tc["id"], "content": content}
-            )
-
-        elif name == "patch":
-            ops = args.get("operations", [])
-            success, error = await ctx.shared_state.patch(ctx.call_path, ops)
-            if success:
-                content = f"OK ({len(ops)} operations applied)"
-                ctx.log(f"patch() -> OK ({len(ops)} ops)")
-            else:
-                content = f"FAILED: {error}"
-                ctx.log(f"patch() -> FAILED: {error[:50]}")
-            results.append(
-                {"role": "tool", "tool_call_id": tc["id"], "content": content}
-            )
-
-        elif name == "calc":
-            # calc is an alias for read - just evaluates the expression
-            expr = args.get("expr", "0")
-            try:
-                content = await ctx.shared_state.eval(expr)
-                ctx.log(f"calc({expr[:30]}) -> {content[:50]}")
-            except Exception as e:
-                content = f"Error: {e}"
-                ctx.log(f"calc() -> ERROR: {e}")
+        if name == "eval":
+            code = args.get("code", "state")
+            content = await ctx.shared_state.eval(code, ctx.call_path)
+            # Truncate log for long code
+            code_preview = code[:40] + "..." if len(code) > 40 else code
+            content_preview = content[:50] + "..." if len(content) > 50 else content
+            ctx.log(f"eval({code_preview}) -> {content_preview}")
             results.append(
                 {"role": "tool", "tool_call_id": tc["id"], "content": content}
             )
@@ -599,7 +525,7 @@ async def process_tool_calls(ctx: AgentContext, tool_calls: list[dict]) -> list[
                 {
                     "role": "tool",
                     "tool_call_id": tc["id"],
-                    "content": f"Error: {name}() not available at this depth. Use read/patch directly.",
+                    "content": f"Error: {name}() not available at this depth. Use eval() directly.",
                 }
             )
 
@@ -758,17 +684,19 @@ Verify internal consistency and mathematical accuracy.
 
 ## Check Schema (STRICT)
 
-Every check in `/checks` MUST have exactly these fields:
-```json
-{"id": "bs_crossfoot_2023", "category": "cross_footing", "status": "pass",
- "expected": 1234, "actual": 1234, "difference": 0, "description": "...", "page": 3}
+Every check MUST have exactly these fields:
+```python
+state.setdefault('checks', []).append({
+    "id": "bs_crossfoot_2023",      # unique snake_case
+    "category": "cross_footing",     # cross_footing | internal_consistency | note_ties
+    "status": "pass",                # pass | fail | warn
+    "expected": 1234,                # number or null
+    "actual": 1234,                  # number or null
+    "difference": 0,                 # number or null
+    "description": "Total assets crossfoot 2023",
+    "page": 3
+})
 ```
-- **id**: unique snake_case identifier
-- **category**: cross_footing | internal_consistency | note_ties
-- **status**: pass | fail | warn
-- **expected/actual/difference**: numbers (use null if N/A)
-- **description**: what was checked
-- **page**: page number
 
 **When delegating, include this schema in spawn prompts.** Sub-agents don't see your instructions.
 
@@ -789,7 +717,6 @@ Delegate by statement/section. Record ALL checks including passes."""
 
     # Summary
     checks = shared_state.state.get("checks", [])
-    # Handle case where checks might be stored as dict or other structure
     if not isinstance(checks, list):
         checks = []
     pass_count = sum(
@@ -812,6 +739,7 @@ Delegate by statement/section. Record ALL checks including passes."""
         f"Checks: {len(checks)} total ({pass_count} pass, {fail_count} fail, {warn_count} warn)",
         file=sys.stderr,
     )
+    print(f"Evals: {len(shared_state.eval_log)}", file=sys.stderr)
     print(f"Output: {output_path}", file=sys.stderr)
 
     return shared_state.state
