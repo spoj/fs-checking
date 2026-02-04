@@ -63,12 +63,12 @@ def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None)
     - Rebind detection: caller checks if state was rebound
     - state.clear() blocked: raises error
     - print(): no-op (use expressions to see values)
-    - Local vars: don't persist between calls
+    - Local vars: persist if persistent_locals provided
 
     Args:
         code: Python code to execute
         variables: Variables to inject (e.g., {"state": {...}})
-        persistent_locals: If provided, locals are stored here for rebind detection
+        persistent_locals: If provided, used as local namespace (persists across calls)
     """
     safe_builtins = {
         # Constants
@@ -149,9 +149,12 @@ def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None)
         "pluck": pluck,
     }
 
-    local_ns = {}
+    # Use persistent_locals as actual namespace, or create fresh one
+    local_ns = persistent_locals if persistent_locals is not None else {}
+
+    # Inject variables (state, etc.) - always update to get fresh references
     for k, v in variables.items():
-        local_ns.setdefault(k, v)
+        local_ns[k] = v
 
     original_state = variables.get("state")
 
@@ -178,10 +181,6 @@ def safe_exec(code: str, variables: dict, persistent_locals: dict | None = None)
         raise RuntimeError(
             "state.clear() is not allowed. Use del state['key'] or state.pop('key') instead."
         )
-
-    # Store locals for rebind detection
-    if persistent_locals is not None:
-        persistent_locals.update(local_ns)
 
     return result
 
@@ -247,10 +246,23 @@ class SharedState:
         self.lock = asyncio.Lock()
         self.eval_log: list[dict] = []
 
-    async def eval(self, code: str, agent_path: str = "") -> str:
-        """Execute Python on state (reads and writes) under lock."""
+    async def eval(
+        self, code: str, agent_path: str = "", eval_locals: dict | None = None
+    ) -> str:
+        """Execute Python on state (reads and writes) under lock.
+
+        Args:
+            code: Python code to execute
+            agent_path: Agent identifier for logging
+            eval_locals: Agent's persistent local namespace (variables persist across calls)
+        """
         async with self.lock:
-            local_ns = {}
+            # Use agent's persistent locals, or empty dict if none
+            local_ns = eval_locals if eval_locals is not None else {}
+
+            # Always inject fresh state reference (shared, not agent-local)
+            local_ns["state"] = self.state
+
             try:
                 result = safe_exec(
                     code,
@@ -265,6 +277,8 @@ class SharedState:
             # Detect rebinding: if agent did `state = {...}`, local_ns["state"]
             # is a NEW dict, not self.state. This loses their work silently.
             if local_ns.get("state") is not self.state:
+                # Restore correct state reference
+                local_ns["state"] = self.state
                 return (
                     "Error: Rebinding 'state' loses your changes. Mutate instead:\n"
                     "  state['key'] = value\n"
@@ -324,13 +338,13 @@ TOOL_EVAL = {
     "type": "function",
     "function": {
         "name": "eval",
-        "description": "Execute Python on shared state. Variable 'state' is the shared dict. Use for reads AND writes.",
+        "description": "Execute Python. `state` is shared with all agents. Other variables are local to you and persist across calls.",
         "parameters": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "string",
-                    "description": "Python code. Examples: state.get('checks'), state['header'] = {...}, state.setdefault('checks', []).append({...}), 1234 + 5678",
+                    "description": "Python code. Examples: x = state.get('data'), state['result'] = x * 2, state.setdefault('checks', []).append({...})",
                 },
             },
             "required": ["code"],
@@ -365,16 +379,23 @@ Write examples:
 - `eval("state['metadata'] = {'company': 'ABC'}")` → "OK"
 - `eval("state.setdefault('checks', []).append({...})")` → "OK"
 
-IMPORTANT:
-- MUTATE `state`, don't rebind: `state['x'] = 1` not `state = {'x': 1}`
-- Variables don't persist between eval() calls
-- print() is a no-op; use expressions to see values
+## Variables
+
+- **`state`** - SHARED with all agents. Mutate it, don't rebind.
+- **Other variables** - LOCAL to you, persist across your eval() calls. Other agents cannot see them.
+
+Example:
+```
+eval("my_data = extract_values()")   # my_data saved locally
+eval("my_data['total']")             # works - my_data persists
+eval("state['result'] = my_data")    # share via state
+```
 
 ## Rules
 
-- eval() to read FIRST before writing
+- eval() to read state FIRST before writing
 - Use setdefault() + append() for safe concurrent writes
-- If something fails, re-read and adapt
+- If something fails, re-read state and adapt
 
 Final message (no tool calls) = summary for parent.
 """
@@ -472,6 +493,7 @@ class AgentContext:
         }
     )
     sub_agents: dict[str, "AgentContext"] = field(default_factory=dict)
+    eval_locals: dict = field(default_factory=dict)  # Persistent local variables
 
     def can_delegate(self) -> bool:
         return self.depth < self.terminate_depth
@@ -602,7 +624,7 @@ async def process_tool_calls(ctx: AgentContext, tool_calls: list[dict]) -> list[
 
         if name == "eval":
             code = args.get("code", "state")
-            content = await ctx.shared_state.eval(code, ctx.call_path)
+            content = await ctx.shared_state.eval(code, ctx.call_path, ctx.eval_locals)
             # Truncate log for long code
             code_preview = code[:40] + "..." if len(code) > 40 else code
             content_preview = content[:50] + "..." if len(content) > 50 else content
