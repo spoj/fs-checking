@@ -75,7 +75,7 @@ async def rank_and_dedupe(
         user_content.append(
             {
                 "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+                "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
             }
         )
 

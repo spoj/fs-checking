@@ -4,7 +4,11 @@ Based on extensive benchmarking:
 - 10x flash runs achieve 88.9% recall on 27-error test set
 - Gemini Pro rank+dedupe reduces 166 candidates to 21 unique findings
 - Final: 90.9% F1, 86.2% recall, 96.2% precision
-- Total cost ~$0.80, time ~3-4 minutes
+- Total cost ~$0.15, time ~3-4 minutes
+
+Uses native PDF page shuffling for diversity (lossless, no image conversion).
+Each detection run sees pages in a different random order, but page numbers
+in document headers are preserved so the model reports correct page references.
 
 Usage:
     from fs_checking.strategies.ensemble import run_ensemble
@@ -14,7 +18,6 @@ Usage:
 import asyncio
 import base64
 import json
-import random
 import re
 import sys
 import time
@@ -22,15 +25,26 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ...api import OpenRouterClient
-from ...pdf_utils import pdf_to_images
+from ...pdf_utils import get_page_count, shuffle_pdf_pages
 
 DEFAULT_DETECT_MODEL = "google/gemini-3-flash-preview"
 DEFAULT_RANK_MODEL = "google/gemini-3-pro-preview"
 DEFAULT_NUM_RUNS = 10
 
+# Pricing per 1M tokens (from OpenRouter, as of Jan 2025)
+MODEL_PRICING = {
+    "google/gemini-3-flash-preview": {"input": 0.50, "output": 3.00},
+    "google/gemini-3-pro-preview": {"input": 2.00, "output": 12.00},
+    "google/gemini-2.5-flash-preview": {"input": 0.15, "output": 0.60},
+    "google/gemini-2.5-pro-preview": {"input": 1.25, "output": 10.00},
+}
+
 
 DETECT_PROMPT = """\
 You are a financial statement auditor. Analyze these financial statements for errors.
+
+IMPORTANT: Pages may appear in shuffled order. Use the page numbers shown in the 
+document headers/footers (e.g., "Page 8" or "8" at top of page), NOT the PDF position.
 
 ## Check Categories
 
@@ -58,6 +72,7 @@ You are a financial statement auditor. Analyze these financial statements for er
 1. Work through EVERY page systematically
 2. Report ALL errors found
 3. Be thorough - missing errors is worse than false positives
+4. Use DOCUMENT page numbers (from headers), not PDF position
 
 Return ONLY a JSON array of errors found:
 ```json
@@ -119,40 +134,64 @@ class RunConfig:
     seed: int
 
 
+def _calculate_cost(usage: dict, model: str) -> float:
+    """Calculate cost in USD from usage dict."""
+    pricing = MODEL_PRICING.get(model, {"input": 0, "output": 0})
+    input_tokens = usage.get("prompt_tokens", 0)
+    output_tokens = usage.get("completion_tokens", 0)
+    return (
+        input_tokens * pricing["input"] + output_tokens * pricing["output"]
+    ) / 1_000_000
+
+
 async def _run_detection_pass(
     config: RunConfig,
-    page_images: list[bytes],
+    pdf_bytes: bytes,
+    pdf_name: str,
     client: OpenRouterClient,
-) -> list[dict]:
-    """Run a single detection pass with shuffled page order (single-pass JSON output)."""
-    # Shuffle pages
-    page_indices = list(range(len(page_images)))
-    random.seed(config.seed)
-    random.shuffle(page_indices)
+    shuffle: bool = True,
+) -> tuple[list[dict], dict]:
+    """Run a single detection pass on PDF.
 
-    # Build message
-    user_content = []
-    for idx in page_indices:
-        user_content.append({"type": "text", "text": f"\n=== Page {idx + 1} ==="})
-        img_b64 = base64.b64encode(page_images[idx]).decode()
-        user_content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{img_b64}"},
-            }
-        )
-    user_content.append({"type": "text", "text": f"\n\n{DETECT_PROMPT}"})
+    Args:
+        config: Run configuration with seed for shuffling
+        pdf_bytes: Original PDF bytes
+        pdf_name: Filename for the PDF
+        client: API client
+        shuffle: If True, shuffle pages using config.seed
+
+    Returns:
+        Tuple of (findings list, usage dict)
+    """
+    # Optionally shuffle pages
+    if shuffle:
+        pdf_to_send = shuffle_pdf_pages(pdf_bytes, config.seed)
+    else:
+        pdf_to_send = pdf_bytes
+
+    # Build message with PDF
+    pdf_b64 = base64.b64encode(pdf_to_send).decode()
+    user_content = [
+        {
+            "type": "file",
+            "file": {
+                "filename": pdf_name,
+                "file_data": f"data:application/pdf;base64,{pdf_b64}",
+            },
+        },
+        {"type": "text", "text": DETECT_PROMPT},
+    ]
 
     messages = [{"role": "user", "content": user_content}]
 
     # Single pass - no tools, just JSON output
     response = await client.chat(model=config.model, messages=messages)
     content = response.get("message", {}).get("content", "")
+    usage = response.get("usage", {})
 
     # Parse JSON array from response
     findings = []
     try:
-        # Find JSON array in response
         json_match = re.search(r"\[[\s\S]*\]", content)
         if json_match:
             parsed = json.loads(json_match.group())
@@ -164,28 +203,21 @@ async def _run_detection_pass(
         print(f"[{config.run_id}] JSON parse error: {e}", file=sys.stderr)
 
     print(f"[{config.run_id}] Found {len(findings)} errors", file=sys.stderr)
-    return findings
+    return findings, usage
 
 
 async def _rank_and_dedupe(
     candidates: list[dict],
-    page_images: list[bytes],
+    pdf_bytes: bytes,
+    pdf_name: str,
     client: OpenRouterClient,
     model: str,
-) -> dict:
-    """Rank and deduplicate findings using full document context."""
-    # Build message with all pages in sequence
-    user_content = []
-    for i, img_bytes in enumerate(page_images):
-        user_content.append({"type": "text", "text": f"\n=== Page {i + 1} ==="})
-        img_b64 = base64.b64encode(img_bytes).decode()
-        user_content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{img_b64}"},
-            }
-        )
+) -> tuple[dict, dict]:
+    """Rank and deduplicate findings using PDF context.
 
+    Returns:
+        Tuple of (ranked results dict, usage dict)
+    """
     # Format candidates
     candidates_for_prompt = [
         {
@@ -201,7 +233,18 @@ async def _rank_and_dedupe(
         num_candidates=len(candidates),
         candidates_json=json.dumps(candidates_for_prompt, indent=2),
     )
-    user_content.append({"type": "text", "text": prompt})
+
+    pdf_b64 = base64.b64encode(pdf_bytes).decode()
+    user_content = [
+        {
+            "type": "file",
+            "file": {
+                "filename": pdf_name,
+                "file_data": f"data:application/pdf;base64,{pdf_b64}",
+            },
+        },
+        {"type": "text", "text": prompt},
+    ]
 
     response = await client.chat(
         model=model,
@@ -209,16 +252,17 @@ async def _rank_and_dedupe(
     )
 
     content = response.get("message", {}).get("content", "")
+    usage = response.get("usage", {})
 
     # Parse response
     try:
         json_match = re.search(r"\{[\s\S]*\}", content)
         if json_match:
-            return json.loads(json_match.group())
+            return json.loads(json_match.group()), usage
     except json.JSONDecodeError as e:
         print(f"Parse error in rank_dedupe: {e}", file=sys.stderr)
 
-    return {"high": [], "medium": [], "low": [], "error": "parse_failed"}
+    return {"high": [], "medium": [], "low": [], "error": "parse_failed"}, usage
 
 
 async def run_ensemble(
@@ -227,35 +271,42 @@ async def run_ensemble(
     detect_model: str = DEFAULT_DETECT_MODEL,
     rank_model: str = DEFAULT_RANK_MODEL,
     num_runs: int = DEFAULT_NUM_RUNS,
+    shuffle: bool = True,
 ) -> dict:
     """Run ensemble detection with rank/dedupe.
 
     Pipeline:
-    1. Detection: 10x flash parallel runs with shuffled page orders
+    1. Detection: N parallel runs with shuffled page order
     2. Rank/Dedupe: Gemini Pro organizes and deduplicates findings
 
     Args:
         pdf_path: Path to PDF file
-        output_path: Output JSON path
-        detect_model: Model for detection phase (default: flash)
-        rank_model: Model for rank/dedupe phase (default: pro)
+        output_path: Output JSON path (default: <pdf>.ensemble.json)
+        detect_model: Model for detection phase (default: gemini-3-flash)
+        rank_model: Model for rank/dedupe phase (default: gemini-3-pro)
         num_runs: Number of parallel detection runs (default: 10)
+        shuffle: If True (default), shuffle PDF pages for each run for diversity
 
     Returns:
-        Result dict with prioritized checks
+        Result dict with prioritized findings and metadata
     """
     output_path = output_path or pdf_path.with_suffix(".ensemble.json")
 
     print(f"Loading {pdf_path}...", file=sys.stderr)
-    page_images = pdf_to_images(pdf_path.read_bytes(), dpi=150)
-    print(f"Pages: {len(page_images)}", file=sys.stderr)
+    pdf_bytes = pdf_path.read_bytes()
+    num_pages = get_page_count(pdf_bytes)
+    print(f"Pages: {num_pages}", file=sys.stderr)
+
+    mode = "PDF shuffled" if shuffle else "PDF sequential"
+    print(f"Mode: {mode}", file=sys.stderr)
     print(
         f"Strategy: {num_runs}x {detect_model.split('/')[-1]} + {rank_model.split('/')[-1]} rank/dedupe",
         file=sys.stderr,
     )
 
-    client = OpenRouterClient(reasoning_effort="high", timeout=900.0)
+    client = OpenRouterClient(reasoning_effort="high", timeout=1800.0)
     total_start = time.time()
+    total_cost = 0.0
 
     # Phase 1: Detection (parallel)
     print(f"\n{'=' * 60}", file=sys.stderr)
@@ -271,13 +322,16 @@ async def run_ensemble(
     ]
 
     detection_tasks = [
-        _run_detection_pass(config, page_images, client) for config in configs
+        _run_detection_pass(config, pdf_bytes, pdf_path.name, client, shuffle=shuffle)
+        for config in configs
     ]
+
     detection_results = await asyncio.gather(*detection_tasks)
 
     all_findings = []
-    for findings in detection_results:
+    for findings, usage in detection_results:
         all_findings.extend(findings)
+        total_cost += _calculate_cost(usage, detect_model)
 
     print(f"\nPhase 1 complete: {len(all_findings)} raw findings", file=sys.stderr)
 
@@ -286,7 +340,10 @@ async def run_ensemble(
     print(f"PHASE 2: Rank/Dedupe ({rank_model.split('/')[-1]})", file=sys.stderr)
     print(f"{'=' * 60}", file=sys.stderr)
 
-    ranked = await _rank_and_dedupe(all_findings, page_images, client, rank_model)
+    ranked, rank_usage = await _rank_and_dedupe(
+        all_findings, pdf_bytes, pdf_path.name, client, rank_model
+    )
+    total_cost += _calculate_cost(rank_usage, rank_model)
 
     high = ranked.get("high", [])
     medium = ranked.get("medium", [])
@@ -303,11 +360,14 @@ async def run_ensemble(
     # Build result
     result = {
         "metadata": {
-            "strategy": "ensemble-10x-flash-pro-rankdedupe",
+            "strategy": "ensemble-flash-pro-rankdedupe",
             "detect_model": detect_model,
             "rank_model": rank_model,
             "num_runs": num_runs,
+            "mode": "pdf_shuffled" if shuffle else "pdf_sequential",
+            "num_pages": num_pages,
             "elapsed_seconds": round(elapsed, 1),
+            "estimated_cost_usd": round(total_cost, 4),
         },
         "high": high,
         "medium": medium,
@@ -325,7 +385,7 @@ async def run_ensemble(
     output_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
 
     print(f"\n{'=' * 60}", file=sys.stderr)
-    print(f"Completed in {elapsed:.1f}s", file=sys.stderr)
+    print(f"Completed in {elapsed:.1f}s (est. ${total_cost:.4f})", file=sys.stderr)
     print(
         f"Raw: {len(all_findings)} -> Unique: {total_ranked} (H:{len(high)} M:{len(medium)} L:{len(low)})",
         file=sys.stderr,
@@ -356,6 +416,11 @@ async def main():
         default=DEFAULT_NUM_RUNS,
         help="Number of detection runs",
     )
+    parser.add_argument(
+        "--no-shuffle",
+        action="store_true",
+        help="Disable page shuffling (all runs see same page order)",
+    )
 
     args = parser.parse_args()
 
@@ -365,6 +430,7 @@ async def main():
         args.detect_model,
         args.rank_model,
         args.runs,
+        shuffle=not args.no_shuffle,
     )
 
 

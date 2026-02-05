@@ -271,7 +271,7 @@ async def run_baseline_with_tools(
         user_content.append(
             {
                 "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+                "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
             }
         )
 
@@ -426,7 +426,7 @@ async def run_baseline(
         user_content.append(
             {
                 "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+                "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
             }
         )
 
@@ -604,7 +604,7 @@ async def verify_finding(
             user_content.append(
                 {
                     "type": "image_url",
-                    "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+                    "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
                 }
             )
 
@@ -670,7 +670,7 @@ async def verify_page_batch(
         user_content.append(
             {
                 "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+                "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
             }
         )
 
@@ -814,7 +814,7 @@ async def _run_single_detection_pass(
         user_content.append(
             {
                 "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+                "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
             }
         )
     user_content.append({"type": "text", "text": f"\n\n{TOOL_PROMPT}"})

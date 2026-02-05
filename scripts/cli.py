@@ -40,12 +40,18 @@ load_dotenv(Path(__file__).parent.parent / ".env")
     default=10,
     help="Number of parallel detection runs (default: 10)",
 )
+@click.option(
+    "--no-shuffle",
+    is_flag=True,
+    help="Disable page shuffling (all runs see same page order)",
+)
 def main(
     pdf_file: Path,
     output: Path | None,
     detect_model: str,
     rank_model: str,
     runs: int,
+    no_shuffle: bool,
 ):
     """
     Check IFRS financial statements in a PDF for errors.
@@ -62,7 +68,9 @@ def main(
     # Import here to avoid import errors when just showing help
     from fs_checking.strategies.ensemble import run_ensemble
 
+    mode_str = "PDF shuffled" if not no_shuffle else "PDF sequential"
     click.echo(f"Checking: {pdf_file}")
+    click.echo(f"Mode: {mode_str}")
     click.echo(
         f"Strategy: {runs}x {detect_model.split('/')[-1]} + {rank_model.split('/')[-1]} rank/dedupe"
     )
@@ -74,18 +82,21 @@ def main(
             detect_model=detect_model,
             rank_model=rank_model,
             num_runs=runs,
+            shuffle=not no_shuffle,
         )
     )
 
     # Print summary
     summary = result.get("summary", {})
+    metadata = result.get("metadata", {})
     high = summary.get("high", 0)
     medium = summary.get("medium", 0)
     low = summary.get("low", 0)
     total = summary.get("total_unique", 0)
     raw = summary.get("raw_findings", 0)
+    cost = metadata.get("estimated_cost_usd", 0)
 
-    click.echo(f"\nFindings: {raw} raw -> {total} unique")
+    click.echo(f"\nFindings: {raw} raw -> {total} unique (${cost:.4f})")
     click.echo(f"  HIGH:   {high}")
     click.echo(f"  MEDIUM: {medium}")
     click.echo(f"  LOW:    {low}")
