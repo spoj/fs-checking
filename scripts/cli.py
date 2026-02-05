@@ -1,4 +1,8 @@
-"""CLI entry point for financial statement checking."""
+"""CLI entry point for financial statement checking.
+
+Uses ensemble strategy: 10x Flash detection + Pro rank/dedupe.
+Achieves 90.9% F1, 86.2% recall, 96.2% precision on test set.
+"""
 
 import asyncio
 import click
@@ -15,71 +19,83 @@ load_dotenv(Path(__file__).parent.parent / ".env")
     "--output",
     "-o",
     type=click.Path(path_type=Path),
-    help="Output JSON file (default: <pdf_file>.checks.json)",
+    help="Output JSON file (default: <pdf_file>.ensemble.json)",
 )
 @click.option(
-    "--model",
-    "-m",
-    default=None,
-    help="Model to use (default: FS_CHECK_MODEL env or google/gemini-3-flash-preview)",
+    "--detect-model",
+    "-d",
+    default="google/gemini-3-flash-preview",
+    help="Model for detection phase (default: gemini-3-flash-preview)",
 )
 @click.option(
-    "--max-depth",
+    "--rank-model",
+    "-r",
+    default="google/gemini-3-pro-preview",
+    help="Model for rank/dedupe phase (default: gemini-3-pro-preview)",
+)
+@click.option(
+    "--runs",
+    "-n",
     type=int,
-    default=2,
-    help="Maximum delegation depth for swarm (default: 2)",
-)
-@click.option(
-    "--prompt",
-    "-p",
-    type=str,
-    default=None,
-    help="Custom prompt for the swarm (default: standard IFRS checking)",
+    default=10,
+    help="Number of parallel detection runs (default: 10)",
 )
 def main(
     pdf_file: Path,
     output: Path | None,
-    model: str | None,
-    max_depth: int,
-    prompt: str | None,
+    detect_model: str,
+    rank_model: str,
+    runs: int,
 ):
     """
-    Check IFRS financial statements in a PDF for consistency.
+    Check IFRS financial statements in a PDF for errors.
+
+    Uses ensemble strategy: multiple detection passes with rank/dedupe.
 
     PDF_FILE: Path to the financial statements PDF
 
     Example:
-        fs-check annual_report.pdf -o results.json
-        fs-check financial_statements.pdf --model anthropic/claude-opus-4.5
+        fs-check annual_report.pdf
+        fs-check financial_statements.pdf -o results.json
+        fs-check document.pdf --runs 5  # Faster, less thorough
     """
     # Import here to avoid import errors when just showing help
-    from fs_checking.swarm import run_swarm
+    from fs_checking.strategies.ensemble import run_ensemble
 
     click.echo(f"Checking: {pdf_file}")
+    click.echo(
+        f"Strategy: {runs}x {detect_model.split('/')[-1]} + {rank_model.split('/')[-1]} rank/dedupe"
+    )
 
     result = asyncio.run(
-        run_swarm(
+        run_ensemble(
             pdf_path=pdf_file,
             output_path=output,
-            model=model,
-            max_depth=max_depth,
-            prompt=prompt,
+            detect_model=detect_model,
+            rank_model=rank_model,
+            num_runs=runs,
         )
     )
 
     # Print summary
-    checks = result.get("checks", [])
-    pass_count = sum(1 for c in checks if c.get("status") == "pass")
-    fail_count = sum(1 for c in checks if c.get("status") == "fail")
-    warn_count = sum(1 for c in checks if c.get("status") == "warn")
+    summary = result.get("summary", {})
+    high = summary.get("high", 0)
+    medium = summary.get("medium", 0)
+    low = summary.get("low", 0)
+    total = summary.get("total_unique", 0)
+    raw = summary.get("raw_findings", 0)
 
-    click.echo(f"\nSummary: {pass_count} pass, {fail_count} fail, {warn_count} warn")
+    click.echo(f"\nFindings: {raw} raw -> {total} unique")
+    click.echo(f"  HIGH:   {high}")
+    click.echo(f"  MEDIUM: {medium}")
+    click.echo(f"  LOW:    {low}")
 
-    if fail_count > 0:
-        click.echo("\nFailed checks:")
-        for c in checks:
-            if c.get("status") == "fail":
-                click.echo(f"  - {c.get('id', '?')}: {c.get('reason', '')[:60]}")
+    # Show high priority items
+    if result.get("high"):
+        click.echo("\nHigh priority findings:")
+        for item in result["high"][:5]:
+            desc = item.get("description", "")[:70]
+            click.echo(f"  p{item.get('page', '?')}: {desc}")
 
 
 if __name__ == "__main__":

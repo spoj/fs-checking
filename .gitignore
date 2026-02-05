@@ -11,6 +11,7 @@ uv.lock
 # Output files
 *.json
 !schemas/*.json
+!samples/*.ground_truth.json
 
 # PDF test files
 *.pdf

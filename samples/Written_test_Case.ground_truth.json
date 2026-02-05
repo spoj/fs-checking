@@ -1,0 +1,40 @@
+{
+  "document": "Written test_Case.pdf",
+  "verified_date": "2026-02-05",
+  "description": "27 detectable errors - audited by Gemini Pro + 3x Flash consensus",
+  "audit_notes": "Removed: 8 (subjective), 17/18 (math correct), 35 (actually ties). Merged: 3/19/22, 4/33, 6/7, 27/28",
+  "issues": [
+    {"id": "header_year_wrong", "page": [1, 2], "category": "presentation", "severity": "presentation", "description": "P&L and OCI titles say '2022' but columns show 2023/2022"},
+    {"id": "missing_consolidated_label", "page": 1, "category": "presentation", "severity": "presentation", "description": "P&L missing 'CONSOLIDATED' label (BS and CF have it)"},
+    {"id": "bs_net_current_label", "page": 3, "category": "presentation", "severity": "minor", "description": "2023: Positive 285,986 labeled 'Net current liabilities'. 2022: (45,237) bracketed inconsistently"},
+    {"id": "note10_content_mismatch", "page": [3, 8], "category": "note_ties", "severity": "material", "description": "Note 10 titled 'PPE' but contains ROU asset data (195,876 ties to BS ROU, not PPE 383,802)"},
+    {"id": "note10_wrong_number", "page": [3, 8], "category": "presentation", "severity": "presentation", "description": "BS references Note 12 for PPE but note is numbered Note 10"},
+    {"id": "note10_nbv_crossfoot", "page": 8, "category": "cross_footing", "severity": "material", "description": "Note 10 NBV rollforward sums to 95,876 but closing table shows 195,876 (100k difference)"},
+    {"id": "note10_depreciation_narrative", "page": 9, "category": "note_ties", "severity": "minor", "description": "Note 10 narrative: depreciation 23,469 + 26,998 = 50,467, but table shows 150,467"},
+    {"id": "note10_ppe_bs_tie_2022", "page": [3, 9], "category": "note_ties", "severity": "material", "description": "Note 10 PPE 2022=201,973 vs BS=391,970"},
+    {"id": "cf_bank_loans_note31b_tie", "page": [5, 13], "category": "note_ties", "severity": "minor", "description": "CF bank loans 28,987 vs Note 31(b) 30,446"},
+    {"id": "cf_financing_2022_crossfoot", "page": 5, "category": "cross_footing", "severity": "material", "description": "CF Financing 2022: stated -1,020,365 but sums to -1,167,973 (cascades to net increase error)"},
+    {"id": "cf_long_term_notes_note31b_tie", "page": [5, 13], "category": "note_ties", "severity": "minor", "description": "CF long-term notes 498,196 vs Note 31(b) 496,737"},
+    {"id": "note4_cos_pl_tie", "page": [1, 7], "category": "note_ties", "severity": "material", "description": "Note 4 cost of inventories 11,322,355 vs P&L cost of sales 10,221,721"},
+    {"id": "note4_invalid_note_ref", "page": 7, "category": "presentation", "severity": "presentation", "description": "Note 4 references 'Note 1' for depreciation but PPE is Note 10/12"},
+    {"id": "note4_amortization_inconsistent", "page": [1, 7, 12], "category": "note_ties", "severity": "material", "description": "Amortization: Note 4=62,534 vs P&L=26,534 vs Note 31(a)=12,738"},
+    {"id": "note4_reorg_costs_2022_pl_tie", "page": [1, 7], "category": "note_ties", "severity": "material", "description": "Note 4 reorg 2022=14,991 vs P&L=139,142"},
+    {"id": "note4_reorg_costs_2023_pl_tie", "page": [1, 7], "category": "note_ties", "severity": "material", "description": "Note 4 reorg 2023=46,825 vs P&L=nil"},
+    {"id": "note4_impairment_note21_tie", "page": [7, 11], "category": "note_ties", "severity": "minor", "description": "Note 4 impairment 14,135 vs Note 21 net movement 14,024"},
+    {"id": "note4_noncore_pl_tie_2023", "page": [1, 7], "category": "note_ties", "severity": "minor", "description": "P&L non-core 52,695 vs Note 4 sum 53,316 (reorg 46,825 + other 6,491)"},
+    {"id": "note21_negative_aging", "page": 10, "category": "reasonableness", "severity": "material", "description": "Aging table shows impossible negative (108,351) in 91-180 days bucket"},
+    {"id": "note21_two_tables_mismatch", "page": 10, "category": "cross_footing", "severity": "material", "description": "Two aging tables show different totals: 1,017,189 vs 1,023,971"},
+    {"id": "note21_provision_rollforward", "page": 11, "category": "rollforward", "severity": "minor", "description": "Provision rollforward: 51,280+15,023-53,725-999+160=11,739 vs stated 11,850"},
+    {"id": "note21_wrong_note_ref", "page": 11, "category": "presentation", "severity": "presentation", "description": "References 'Note 3' for impairment but breakdown is in Note 4"},
+    {"id": "note31a_2022_swap", "page": [1, 12], "category": "note_ties", "severity": "material", "description": "Note 31(a) 2022: Interest=46,250 and Depreciation=70,478 are swapped vs P&L"},
+    {"id": "note31a_pbt_2022_pl_tie", "page": [1, 12], "category": "note_ties", "severity": "material", "description": "Note 31(a) PBT 2022=197,635 vs P&L=58,493"},
+    {"id": "note31a_operating_profit_2023_crossfoot", "page": 12, "category": "cross_footing", "severity": "material", "description": "Note 31(a) operating profit before WC 2023: stated 417,535 vs calculated 517,535"},
+    {"id": "oci_2022_reclassification_subtotal", "page": 2, "category": "cross_footing", "severity": "minor", "description": "OCI 2022 reclassification subtotal: 44,703+4,405=49,108 vs stated 48,478"},
+    {"id": "pl_noncash_interest_note31b_tie", "page": [1, 13], "category": "note_ties", "severity": "minor", "description": "P&L non-cash interest 22,942 vs Note 31(b) sum 14,897 (lease 15,645 - notes 748)"}
+  ],
+  "summary": {
+    "total": 27,
+    "by_category": {"note_ties": 14, "cross_footing": 6, "rollforward": 1, "presentation": 5, "reasonableness": 1},
+    "by_severity": {"material": 14, "minor": 8, "presentation": 5}
+  }
+}
