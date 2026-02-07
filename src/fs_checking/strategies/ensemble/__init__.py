@@ -1,14 +1,11 @@
-"""Ensemble strategy: 10x Flash detection + validation.
+"""Ensemble strategy: Nx Flash detection + Pro rank/dedupe."""
 
-Recommended approach based on benchmarking:
-- 10 parallel detection passes with shuffled page orders
-- Validation pass to confirm and deduplicate
-- 88.9% recall at $0.50 cost
 
-Usage:
-    uv run python -m fs_checking.strategies.ensemble "document.pdf"
-"""
+def run_ensemble(*args, **kwargs):  # type: ignore[no-untyped-def]
+    """Lazy-import wrapper to avoid runpy double-import warning."""
+    from .ensemble import run_ensemble as _run
 
-from .ensemble import run_ensemble
+    return _run(*args, **kwargs)
+
 
 __all__ = ["run_ensemble"]

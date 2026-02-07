@@ -1,14 +1,16 @@
-"""Ensemble detection: 10x Flash + Rank/Dedupe with Pro.
+"""Ensemble detection: Nx Flash + Pro rank/dedupe.
 
-Based on extensive benchmarking:
-- 10x flash runs achieve 88.9% recall on 27-error test set
-- Gemini Pro rank+dedupe reduces 166 candidates to 21 unique findings
-- Final: 90.9% F1, 86.2% recall, 96.2% precision
-- Total cost ~$0.15, time ~3-4 minutes
+Pipeline:
+  1. Launch N parallel Gemini Flash runs, each seeing shuffled page order
+  2. Race pattern: launch more than needed, keep first K to finish
+  3. Gemini Pro deduplicates and ranks all findings
 
-Uses native PDF page shuffling for diversity (lossless, no image conversion).
-Each detection run sees pages in a different random order, but page numbers
-in document headers are preserved so the model reports correct page references.
+Best result on mixed doping (29 errors, ar2019):
+  25x Flash race 30/25 — 89.7% recall, 85.2% F1, ~$4
+
+Uses native PDF page shuffling for diversity (lossless PyMuPDF page reorder).
+Page numbers in document headers are preserved so the model reports correct
+page references despite seeing pages in random order.
 
 Usage:
     from fs_checking.strategies.ensemble import run_ensemble
@@ -282,6 +284,7 @@ async def _run_detection_pass(
 
     total_usage: dict = {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0}
     max_turns = 30  # safety limit
+    turn = 0
 
     for turn in range(max_turns):
         response = await client.chat(model=config.model, messages=messages, tools=tools)
