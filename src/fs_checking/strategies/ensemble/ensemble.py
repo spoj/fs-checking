@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ...api import OpenRouterClient
-from ...pdf_utils import get_page_count, rasterize_pdf, shuffle_pdf_pages
+from ...pdf_utils import get_page_count, shuffle_pdf_pages
 
 DEFAULT_DETECT_MODEL = "google/gemini-3-flash-preview"
 DEFAULT_RANK_MODEL = "google/gemini-3-pro-preview"
@@ -409,19 +409,18 @@ async def run_ensemble(
     shuffle: bool = True,
     num_launch: int | None = None,
     stagger_max: float = 0.0,
-    force_visual: bool = False,
-    visual_dpi: int = 100,
-    visual_quality: int = 70,
 ) -> dict:
     """Run ensemble detection with rank/dedupe.
 
     Pipeline:
-    1. (Optional) Rasterize PDF to strip text layer
-    2. Detection: launch N parallel runs, keep first K to complete
-    3. Rank/Dedupe: Gemini Pro organizes and deduplicates findings
+    1. Detection: launch N parallel runs, keep first K to complete
+    2. Rank/Dedupe: Gemini Pro organizes and deduplicates findings
+
+    Accepts any PDF — native or pre-rasterized (via ``rasterize_pdf``).
+    For visual-only mode, rasterize offline first and pass the result.
 
     Args:
-        pdf_path: Path to PDF file
+        pdf_path: Path to PDF file (native or pre-rasterized)
         output_path: Output JSON path (default: <pdf>.ensemble.json)
         detect_model: Model for detection phase (default: gemini-3-flash)
         rank_model: Model for rank/dedupe phase (default: gemini-3-pro)
@@ -429,11 +428,6 @@ async def run_ensemble(
         shuffle: If True (default), shuffle PDF pages for each run for diversity
         num_launch: Total runs to launch (default: same as num_runs, no race)
         stagger_max: Max random delay in seconds before each run starts
-        force_visual: If True, rasterize PDF (render pages as images, recombine
-            into a new PDF with no text layer). Forces the model to rely on
-            visual recognition only — no embedded/selectable text.
-        visual_dpi: Resolution for rasterization (default 150).
-        visual_quality: JPEG quality for rasterization (default 70).
 
     Returns:
         Result dict with prioritized findings and metadata
@@ -449,25 +443,7 @@ async def run_ensemble(
     num_pages = get_page_count(pdf_bytes)
     print(f"Pages: {num_pages}", file=sys.stderr)
 
-    # Rasterize: strip text layer, force visual-only recognition
-    if force_visual:
-        print(
-            f"Rasterizing ({visual_dpi}dpi q{visual_quality})...",
-            file=sys.stderr,
-        )
-        raster_start = time.time()
-        pdf_bytes = rasterize_pdf(pdf_bytes, dpi=visual_dpi, quality=visual_quality)
-        raster_elapsed = time.time() - raster_start
-        print(
-            f"Rasterized: {len(pdf_bytes) / 1024 / 1024:.1f} MB ({raster_elapsed:.1f}s)",
-            file=sys.stderr,
-        )
-
-    if force_visual:
-        mode = f"visual-only ({visual_dpi}dpi q{visual_quality})"
-    else:
-        mode = "native PDF"
-    mode += ", shuffled" if shuffle else ", sequential"
+    mode = "shuffled" if shuffle else "sequential"
     print(f"Mode: {mode}", file=sys.stderr)
     race_str = (
         f" (launch {num_launch}, keep {num_runs})" if num_launch > num_runs else ""
@@ -603,7 +579,7 @@ async def run_ensemble(
             "num_runs": num_runs,
             "num_launched": num_launch,
             "stagger_max": stagger_max,
-            "input_mode": "visual" if force_visual else "pdf",
+            "input_mode": "pdf",
             "shuffled": shuffle,
             "num_pages": num_pages,
             "elapsed_seconds": round(elapsed, 1),
@@ -673,24 +649,6 @@ async def main():
         default=0.0,
         help="Max random delay in seconds before each run starts (default: 0)",
     )
-    parser.add_argument(
-        "--force-visual",
-        action="store_true",
-        help="Rasterize PDF (strip text layer, force visual-only recognition)",
-    )
-    parser.add_argument(
-        "--visual-dpi",
-        type=int,
-        default=100,
-        help="DPI for rasterization (default: 100)",
-    )
-    parser.add_argument(
-        "--visual-quality",
-        type=int,
-        default=70,
-        help="JPEG quality for rasterization (default: 70)",
-    )
-
     args = parser.parse_args()
 
     await run_ensemble(
@@ -702,9 +660,6 @@ async def main():
         shuffle=not args.no_shuffle,
         num_launch=args.launch,
         stagger_max=args.stagger,
-        force_visual=args.force_visual,
-        visual_dpi=args.visual_dpi,
-        visual_quality=args.visual_quality,
     )
 
 

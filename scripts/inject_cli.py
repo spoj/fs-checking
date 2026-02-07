@@ -281,5 +281,30 @@ def batch(
     click.echo(f"Combined manifest: {combined_path}")
 
 
+@main.command("rasterize")
+@click.argument("pdf_file", type=click.Path(exists=True, path_type=Path))
+@click.option("-o", "--output", type=click.Path(path_type=Path), help="Output path")
+@click.option("--dpi", type=int, default=100, help="Render DPI (default: 100)")
+@click.option("--quality", type=int, default=70, help="JPEG quality (default: 70)")
+def rasterize(pdf_file: Path, output: Path | None, dpi: int, quality: int):
+    """Rasterize a PDF: strip text layer, keep only page images.
+
+    Produces a visual-only PDF for testing that the model reads from
+    pixels, not from embedded text. Pass the output to fs-check / ensemble.
+    """
+    from fs_checking.pdf_utils import rasterize_pdf
+
+    pdf_bytes = pdf_file.read_bytes()
+    click.echo(f"Rasterizing {pdf_file} ({len(pdf_bytes) / 1024 / 1024:.1f} MB)...")
+    click.echo(f"  DPI: {dpi}, quality: {quality}")
+
+    result = rasterize_pdf(pdf_bytes, dpi=dpi, quality=quality)
+
+    if output is None:
+        output = pdf_file.with_suffix(".rasterized.pdf")
+    output.write_bytes(result)
+    click.echo(f"Saved: {output} ({len(result) / 1024 / 1024:.1f} MB)")
+
+
 if __name__ == "__main__":
     main()
