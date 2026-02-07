@@ -138,6 +138,31 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 - inject_015 (note_ref_wrong p150): **Not in raw findings.** 0/25 runs caught the off-by-one. Genuine detection miss.
 - inject_022 (Gross profit→Gross loss label p145): **IS in raw findings.** 7/25 runs explicitly flagged "gross loss" as wrong label. But rank/dedupe merged these into `pl_2019_math_and_tie_errors` (20 findings merged) and `pl_presentation_errors_headers_currency` (16 findings merged). The eval LLM matched these mega-findings to inject_004 (offset) and inject_016/018/019 (year/currency/classification) but couldn't decompose the merged blob to also credit inject_022. **Rank/dedupe is the bottleneck here** — over-aggressive merging of 20+ findings into a single entry lost the granularity needed for eval to match individual GT errors.
 
+### 2026-02-08 — 25x Flash, race 30/25, force-visual (rasterized 100dpi, no text layer)
+
+- **Config**: 25x `gemini-3-flash-preview` (launch 30, keep 25), tool-call loop, page shuffle, stagger 5s, `--force-visual` (100dpi q70 JPEG rasterization, text layer stripped)
+- **Purpose**: Validate doping quality — confirm the model detects errors from pixel recognition, not from artefacts in the embedded text layer.
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 26/29 (81.2%) — comparable to v2 native PDF (89.7%)
+- **Precision**: 86.7% (26 TP, 4 FP)
+- **F1**: 83.9%
+- **Cost**: $4.80
+- **Time**: 685s
+- **Raw findings**: 313 (54 from partial harvest)
+- **Rasterized PDF**: 21.0 MB (100dpi q70, 6.9s to rasterize). 150dpi (41MB) hit OpenRouter's ~50MB request size limit.
+
+**Detected (26/29):** All numeric mutations detected except inject_002 (SOCIE tie_break) and inject_014 (magnitude ÷10 p246). Text mutations: inject_016 (year swap), inject_018 (currency), inject_019 (classification), inject_020 (BS heading), inject_022 (profit→loss label), inject_023 (outflow), inject_025 (HKFRS 17), inject_026 (Receivables→Payables), inject_027 (currency), inject_028 (year).
+
+**Missed (6/29):**
+- inject_002 (SOCIE tie_break p150): Consistently missed across all runs
+- inject_014 (magnitude ÷10 p246): Financial summary page, low visibility
+- inject_015 (note_ref_wrong p150 Note 25→26): Off-by-one too subtle for 100dpi OCR
+- inject_017 (year_swap p148 column header "2019"→"2018"): Fine print in column header
+- inject_021 (Due from→Due to p148): Subtle direction word swap
+- inject_024 (restated label removal p148): Small label, hard to spot visually
+
+**Key takeaway:** Visual-only mode confirms the doping is clean — no textual artefacts giving the model unfair hints. The 81% recall from pure pixel recognition is a genuine lower bound. The 3 errors caught in native PDF (v3: 100%) but missed visually (inject_017, inject_021, inject_024) are fine-print items where the embedded text layer gives an advantage. The doping technique (font ref reuse, background color matching) produces visually indistinguishable mutations.
+
 ### 2026-02-07 — CONTROL: 1x Gemini 3 Pro, single pass, no shuffle (full PDF)
 
 - **Config**: 1x `gemini-3-pro-preview`, tool-call loop, no shuffle, no race
