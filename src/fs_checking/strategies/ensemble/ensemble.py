@@ -229,6 +229,7 @@ async def _run_detection_pass(
     client: OpenRouterClient,
     shuffle: bool = True,
     stagger_max: float = 0.0,
+    partial_results: dict | None = None,
 ) -> tuple[list[dict], dict]:
     """Run a single detection pass on PDF using log_issue tool calls.
 
@@ -242,6 +243,8 @@ async def _run_detection_pass(
         client: API client
         shuffle: If True, shuffle pages using config.seed
         stagger_max: Max random delay in seconds before starting (0 = no delay)
+        partial_results: Shared dict keyed by run_id. Findings are written here
+            as they arrive so they survive task cancellation in race mode.
 
     Returns:
         Tuple of (findings list, aggregated usage dict)
@@ -273,6 +276,10 @@ async def _run_detection_pass(
     tools = [LOG_ISSUE_TOOL]
 
     findings: list[dict] = []
+    # Register in shared partial_results so findings survive cancellation
+    if partial_results is not None:
+        partial_results[config.run_id] = findings
+
     total_usage: dict = {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0}
     max_turns = 30  # safety limit
 
@@ -460,6 +467,9 @@ async def run_ensemble(
         for i in range(num_launch)
     ]
 
+    # Shared dict for partial findings — survives task cancellation
+    partial_results: dict[str, list[dict]] = {}
+
     # Create tasks with stagger
     tasks = [
         asyncio.create_task(
@@ -470,6 +480,7 @@ async def run_ensemble(
                 client,
                 shuffle=shuffle,
                 stagger_max=stagger_max,
+                partial_results=partial_results,
             ),
             name=config.run_id,
         )
@@ -478,6 +489,7 @@ async def run_ensemble(
 
     # Race: collect first num_runs successful completions, discard the rest
     all_findings = []
+    completed_runs: set[str] = set()
     pending = set(tasks)
     completed_count = 0
     failed_count = 0
@@ -488,6 +500,7 @@ async def run_ensemble(
             try:
                 findings, usage = task.result()
                 completed_count += 1
+                completed_runs.add(task.get_name())
                 all_findings.extend(findings)
                 total_cost += _calculate_cost(usage, detect_model)
                 elapsed = time.time() - total_start
@@ -503,18 +516,24 @@ async def run_ensemble(
                     file=sys.stderr,
                 )
 
-    # Cancel remaining slow runners
+    # Cancel remaining slow runners but harvest their partial findings
     cancelled = 0
+    partial_harvested = 0
     for task in pending:
         task.cancel()
         cancelled += 1
     if cancelled:
-        print(
-            f"  Cancelled {cancelled} slow runners",
-            file=sys.stderr,
-        )
         # Wait for cancellation to complete
         await asyncio.gather(*pending, return_exceptions=True)
+        # Harvest partial findings from cancelled runs
+        for run_id, findings in partial_results.items():
+            if run_id not in completed_runs and findings:
+                all_findings.extend(findings)
+                partial_harvested += len(findings)
+        msg = f"  Cancelled {cancelled} slow runners"
+        if partial_harvested:
+            msg += f", harvested {partial_harvested} partial findings"
+        print(msg, file=sys.stderr)
 
     print(
         f"\nPhase 1 complete: {len(all_findings)} raw findings "
