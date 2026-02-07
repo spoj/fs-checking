@@ -235,6 +235,7 @@ async def _run_detection_pass(
     use_images: bool = False,
     image_dpi: int = 150,
     image_quality: int = 70,
+    image_format: str = "webp",
 ) -> tuple[list[dict], dict]:
     """Run a single detection pass on PDF using log_issue tool calls.
 
@@ -250,10 +251,11 @@ async def _run_detection_pass(
         stagger_max: Max random delay in seconds before starting (0 = no delay)
         partial_results: Shared dict keyed by run_id. Findings are written here
             as they arrive so they survive task cancellation in race mode.
-        use_images: If True, convert PDF pages to JPEG images instead of
+        use_images: If True, convert PDF pages to images instead of
             sending raw PDF. Useful for models with poor native PDF support.
         image_dpi: Resolution for image conversion (default 150).
-        image_quality: JPEG quality for image conversion (default 70).
+        image_quality: Image quality for conversion (default 70).
+        image_format: "webp" (default) or "jpeg".
 
     Returns:
         Tuple of (findings list, aggregated usage dict)
@@ -265,11 +267,12 @@ async def _run_detection_pass(
 
     # Build message content
     if use_images:
-        # Image mode: render pages as JPEG, shuffle at image level
+        # Image mode: render pages, shuffle at image level
         user_content: list[dict] = pdf_to_image_content(
             pdf_bytes,
             dpi=image_dpi,
             quality=image_quality,
+            fmt=image_format,
             shuffle_seed=config.seed if shuffle else None,
         )
         user_content.append({"type": "text", "text": DETECT_PROMPT})
@@ -428,6 +431,7 @@ async def run_ensemble(
     use_images: bool = False,
     image_dpi: int = 150,
     image_quality: int = 70,
+    image_format: str = "webp",
 ) -> dict:
     """Run ensemble detection with rank/dedupe.
 
@@ -444,11 +448,12 @@ async def run_ensemble(
         shuffle: If True (default), shuffle PDF pages for each run for diversity
         num_launch: Total runs to launch (default: same as num_runs, no race)
         stagger_max: Max random delay in seconds before each run starts
-        use_images: If True, pre-render PDF pages as JPEG images instead of
+        use_images: If True, pre-render PDF pages as images instead of
             sending native PDF. Increases token count but may help models
             that struggle with native PDF parsing.
         image_dpi: Resolution for image pre-rendering (default 150).
-        image_quality: JPEG quality for image pre-rendering (default 70).
+        image_quality: Image quality for pre-rendering (default 70).
+        image_format: "webp" (default, ~50% smaller) or "jpeg".
 
     Returns:
         Result dict with prioritized findings and metadata
@@ -465,7 +470,7 @@ async def run_ensemble(
     print(f"Pages: {num_pages}", file=sys.stderr)
 
     if use_images:
-        mode = f"JPEG images ({image_dpi}dpi q{image_quality})"
+        mode = f"{image_format.upper()} images ({image_dpi}dpi q{image_quality})"
     else:
         mode = "native PDF"
     mode += ", shuffled" if shuffle else ", sequential"
@@ -516,6 +521,7 @@ async def run_ensemble(
                 use_images=use_images,
                 image_dpi=image_dpi,
                 image_quality=image_quality,
+                image_format=image_format,
             ),
             name=config.run_id,
         )
@@ -680,7 +686,7 @@ async def main():
     parser.add_argument(
         "--images",
         action="store_true",
-        help="Pre-render PDF pages as JPEG images instead of sending native PDF",
+        help="Pre-render PDF pages as images instead of sending native PDF",
     )
     parser.add_argument(
         "--image-dpi",
@@ -692,7 +698,13 @@ async def main():
         "--image-quality",
         type=int,
         default=70,
-        help="JPEG quality for image pre-rendering (default: 70)",
+        help="Image quality for pre-rendering (default: 70)",
+    )
+    parser.add_argument(
+        "--image-format",
+        choices=["webp", "jpeg"],
+        default="webp",
+        help="Image format for pre-rendering (default: webp, ~50%% smaller)",
     )
 
     args = parser.parse_args()
@@ -709,6 +721,7 @@ async def main():
         use_images=args.images,
         image_dpi=args.image_dpi,
         image_quality=args.image_quality,
+        image_format=args.image_format,
     )
 
 

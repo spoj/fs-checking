@@ -9,6 +9,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "click>=8.1",
     "jsonpatch>=1.33",
+    "pillow>=12.1.0",
 ]
 
 [project.scripts]
