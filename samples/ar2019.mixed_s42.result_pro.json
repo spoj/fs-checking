@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "strategy": "ensemble-flash-pro-rankdedupe",
+    "detect_model": "google/gemini-3-pro-preview",
+    "rank_model": "google/gemini-3-pro-preview",
+    "num_runs": 1,
+    "num_launched": 1,
+    "stagger_max": 0.0,
+    "mode": "pdf_sequential",
+    "num_pages": 252,
+    "elapsed_seconds": 237.7,
+    "cost_usd": 0.5321
+  },
+  "high": [
+    {
+      "id": "bs_intangibles_mismatch",
+      "page": 146,
+      "description": "Cross-footing error in the Consolidated Balance Sheet. The 'Intangible assets' line item is printed as 2,373,252, but the 'Non-current liabilities' total (2,940,021) is calculated using the value 2,298,948 (which matches Note 11). The vertical sum using the printed figures does not foot.",
+      "merged_from": []
+    },
+    {
+      "id": "cfs_operating_cash_mismatch",
+      "page": 150,
+      "description": "Mathematical error and broken reference in the Consolidated Cash Flow Statement. 'Net cash generated from operations' is stated as 327,617, contradicting Note 31(a) which states 317,102. Additionally, the subtotal 'Net cash outflow from operating activities' (280,854) is calculated using the figure from the Note (317,102), not the figure printed on the statement.",
+      "merged_from": []
+    },
+    {
+      "id": "ppe_note_logic_and_ties",
+      "page": 187,
+      "description": "Material inconsistencies in Note 12 (Property, Plant and Equipment): 1) The opening Net Book Amount (201,973) does not tie to the Restated Consolidated Balance Sheet opening balance (187,943); 2) In the 'Land and buildings' column, there is a logic error where the implied Cost of Disposal (518) is lower than the Net Book Amount of disposals (797), which is impossible.",
+      "merged_from": [
+        "ppe_rollforward_opening_mismatch",
+        "ppe_land_buildings_cost_logic"
+      ]
+    }
+  ],
+  "medium": [
+    {
+      "id": "accounting_standard_typo",
+      "page": 154,
+      "description": "Incorrect accounting standard reference. Under 'New Standard... Adopted', the document lists 'HKFRS 17 Leases'. HKFRS 17 refers to Insurance Contracts; the standard for Leases is HKFRS 16.",
+      "merged_from": []
+    }
+  ],
+  "low": [
+    {
+      "id": "cfs_label_inconsistency",
+      "page": 150,
+      "description": "Inconsistent labeling in the Cash Flow Statement. The Operating section uses '(outflow)/inflow' for a positive number, while the Financing section uses 'inflow/(outflow)'.",
+      "merged_from": []
+    }
+  ],
+  "raw_findings": [
+    {
+      "expected": 2298948,
+      "page": 146,
+      "description": "The 'Intangible assets' line item is 2,373,252, but the Total Non-current assets (2,940,021) is calculated using the value 2,298,948 (which matches Note 11). The vertical sum of the printed non-current assets is 3,014,325, not 2,940,021.",
+      "id": "bs_intangibles_mismatch",
+      "category": "cross_footing",
+      "_run": "run_1"
+    },
+    {
+      "page": 150,
+      "expected": 317102,
+      "id": "cfs_operating_cash_mismatch",
+      "actual": 327617,
+      "description": "'Net cash generated from operations' is stated as 327,617, but Note 31(a) states 317,102. Furthermore, the subtotal 'Net cash outflow from operating activities' (280,854) is calculated using 317,102 less taxes (1,129 + 35,119), not the printed 327,617.",
+      "category": "note_ties",
+      "_run": "run_1"
+    },
+    {
+      "id": "ppe_rollforward_opening_mismatch",
+      "category": "note_ties",
+      "description": "Note 12 states the Net Book Amount at 1 January 2019 is 201,973. However, the Restated Consolidated Balance Sheet at 1 January 2019 (Page 156) states Property, plant and equipment is 187,943.",
+      "page": 187,
+      "actual": 201973,
+      "expected": 187943,
+      "_run": "run_1"
+    },
+    {
+      "id": "ppe_land_buildings_cost_logic",
+      "description": "In the 'Land and buildings' column, the Cost decreases from 969 to 451 (a reduction of 518). However, the Net Book Amount of disposals is 797. It is impossible for the Cost of disposals (implied 518) to be less than the Net Book Value of disposals (797).",
+      "category": "rollforward",
+      "page": 187,
+      "_run": "run_1"
+    },
+    {
+      "page": 154,
+      "category": "presentation",
+      "id": "accounting_standard_typo",
+      "description": "Under 'New Standard... Adopted', the document lists 'HKFRS 17 Leases'. HKFRS 17 is Insurance Contracts; Leases is HKFRS 16.",
+      "_run": "run_1"
+    },
+    {
+      "description": "The label 'Net cash (outflow)/inflow from operating activities' is used for a positive value (280,854), which represents an inflow. The Financing section uses 'Net cash inflow/(outflow)', showing inconsistency in label ordering. The primary issue is the potential confusion caused by prioritizing '(outflow)' for a positive number.",
+      "category": "presentation",
+      "page": 150,
+      "id": "cfs_label_inconsistency",
+      "_run": "run_1"
+    }
+  ],
+  "summary": {
+    "raw_findings": 6,
+    "high": 3,
+    "medium": 1,
+    "low": 1,
+    "total_unique": 5
+  }
+}

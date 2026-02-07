@@ -110,6 +110,37 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 
 **Key takeaway:** Prompt engineering for presentation checks yielded +24pp recall improvement at no additional cost. The detailed sub-categories with concrete examples (direction words, restated labels, standard numbers) directly mapped to previously-missed error types.
 
+### 2026-02-07 — CONTROL: 1x Gemini 3 Pro, single pass, no shuffle (full PDF)
+
+- **Config**: 1x `gemini-3-pro-preview`, tool-call loop, no shuffle, no race
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 5/29 (17.2%)
+- **Precision**: 71.4% (5 TP, 2 FP)
+- **F1**: 27.8%
+- **Cost**: $0.53
+- **Time**: 238s
+- **Findings**: 6 raw → 5 after rank/dedupe
+
+**Detected (5):** inject_001 (tie_break p148 BS), inject_003 (tie_break p152 CF), inject_020 (label_swap_classification p148), inject_023 (label_swap_direction p152), inject_025 (standard_ref_wrong p154)
+
+**Observation:** Pro is high-quality per finding (71% precision) but extremely low coverage — it stops after one pass through the document and only catches the most obvious errors. The single pass finds ~6 errors vs Flash's ~10 per run, but Flash compensates with 25 parallel shuffled runs. Pro's higher per-token cost makes it uneconomical for the brute-force ensemble approach. **Flash ensemble (25x) at $4 crushes Pro single-pass at $0.53 on recall.**
+
+### 2026-02-07 — CONTROL: 1x GPT-5.2 high reasoning, single pass, FS-only pages (110pp)
+
+- **Config**: 1x `openai/gpt-5.2`, tool-call loop, no shuffle, FS-only PDF (p143-252, 110 pages, 6.2 MB)
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 3/29 (10.0%) — only 2 unique GT errors (inject_003 matched twice, inject_008)
+- **Precision**: 75.0% (3 TP, 1 FP)
+- **F1**: 17.6%
+- **Cost**: $0.47
+- **Time**: 483s (5 turns)
+- **Tokens**: 302,730 prompt, 17,574 completion
+- **Findings**: 4 raw (no rank/dedupe)
+
+**Detected (3 matches / 2 unique GT):** inject_003 (tie_break p152 CF — matched twice by two separate findings), inject_008 (sign_flip p182 auditor remuneration)
+
+**Observation:** GPT-5.2 is the weakest performer despite being the most expensive per-token model. Even with the document trimmed to 110 FS pages (vs 252 full), it found only 4 errors in 5 turns. The tool-call loop ran 5 turns but most were near-empty. Known issue: GPT-5.2's multi-turn continuation degrades on large PDFs — it stops calling tools prematurely. At ~$0.47 for 2 unique GT errors, that's **$0.24/error vs Flash ensemble's $0.15/error** with far worse coverage.
+
 ## Written test_Case.pdf (27 errors)
 
 ### 2026-02-05 — Historical baseline (pre tool-call rewrite)
