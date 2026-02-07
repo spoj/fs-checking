@@ -776,6 +776,32 @@ def _color_int_to_rgb(color: int) -> tuple[float, float, float]:
     return (r, g, b)
 
 
+def _get_bg_color(
+    page: fitz.Page,
+    bbox: tuple[float, float, float, float],
+) -> tuple[float, float, float]:
+    """Determine the background color behind a text span.
+
+    Checks if the span's bbox overlaps any filled rectangle (drawn
+    background shading) on the page. Financial tables often shade the
+    current-year column with a light gray (e.g. RGB 241,242,242).
+
+    Returns (r, g, b) float tuple — white (1,1,1) if no shading found.
+    """
+    span_rect = fitz.Rect(bbox)
+    # Check all filled drawings on the page
+    for d in page.get_drawings():
+        if d.get("fill") is None or d["type"] != "f":
+            continue
+        fill_rect = d["rect"]
+        # Check if span center is inside the filled rect
+        cx = (bbox[0] + bbox[2]) / 2
+        cy = (bbox[1] + bbox[3]) / 2
+        if fill_rect.x0 <= cx <= fill_rect.x1 and fill_rect.y0 <= cy <= fill_rect.y1:
+            return d["fill"]  # type: ignore[return-value]
+    return (1.0, 1.0, 1.0)  # default white
+
+
 def _mutate_pdf_span(
     page: fitz.Page,
     span: NumericSpan,
@@ -792,11 +818,12 @@ def _mutate_pdf_span(
     new_is_neg = new_value < 0
     new_text = _format_number(new_value, is_negative=new_is_neg)
 
-    # Redact original text with white fill
+    # Redact original text — use background color matching page shading
+    bg = _get_bg_color(page, span.bbox)
     rect = fitz.Rect(span.bbox)
     rect.x0 -= 1
     rect.x1 += 1
-    page.add_redact_annot(rect, fill=(1, 1, 1))
+    page.add_redact_annot(rect, fill=bg)
     page.apply_redactions()
 
     # Resolve font via page's font ref name
@@ -839,20 +866,23 @@ def _mutate_pdf_text_span(
     """
     new_text = span.replacement
 
+    # Determine background color (may be gray on shaded table columns)
+    bg = _get_bg_color(page, span.bbox)
+
     # For restated_label removal, if replacement is empty, just redact
     if not new_text.strip():
         rect = fitz.Rect(span.bbox)
         rect.x0 -= 1
         rect.x1 += 1
-        page.add_redact_annot(rect, fill=(1, 1, 1))
+        page.add_redact_annot(rect, fill=bg)
         page.apply_redactions()
         return ""
 
-    # Redact original text with white fill
+    # Redact original text with matching background
     rect = fitz.Rect(span.bbox)
     rect.x0 -= 1
     rect.x1 += 1
-    page.add_redact_annot(rect, fill=(1, 1, 1))
+    page.add_redact_annot(rect, fill=bg)
     page.apply_redactions()
 
     # Resolve font via page's font ref name
