@@ -18,6 +18,7 @@ Usage:
 import asyncio
 import base64
 import json
+import random
 import re
 import sys
 import time
@@ -37,6 +38,52 @@ MODEL_PRICING = {
     "google/gemini-3-pro-preview": {"input": 2.00, "output": 12.00},
     "google/gemini-2.5-flash-preview": {"input": 0.15, "output": 0.60},
     "google/gemini-2.5-pro-preview": {"input": 1.25, "output": 10.00},
+}
+
+
+LOG_ISSUE_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "log_issue",
+        "description": "Log a financial statement error you have found. Call this each time you identify an issue.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique snake_case identifier for this error (e.g. 'ppe_rollforward_total_mismatch')",
+                },
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "cross_footing",
+                        "rollforward",
+                        "note_ties",
+                        "presentation",
+                        "reasonableness",
+                    ],
+                    "description": "Error category",
+                },
+                "page": {
+                    "type": "integer",
+                    "description": "Document page number (from headers/footers, NOT PDF position)",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Clear description with specific numbers showing the discrepancy",
+                },
+                "expected": {
+                    "type": "number",
+                    "description": "The correct/expected value",
+                },
+                "actual": {
+                    "type": "number",
+                    "description": "The incorrect value found in the document",
+                },
+            },
+            "required": ["id", "category", "page", "description"],
+        },
+    },
 }
 
 
@@ -70,25 +117,12 @@ document headers/footers (e.g., "Page 8" or "8" at top of page), NOT the PDF pos
 ## Instructions
 
 1. Work through EVERY page systematically
-2. Report ALL errors found
+2. Each time you find an error, call the `log_issue` tool immediately
 3. Be thorough - missing errors is worse than false positives
 4. Use DOCUMENT page numbers (from headers), not PDF position
+5. After checking all pages, write a brief summary of your review
 
-Return ONLY a JSON array of errors found:
-```json
-[
-  {
-    "id": "unique_snake_case_id",
-    "category": "cross_footing|rollforward|note_ties|presentation|reasonableness",
-    "page": 1,
-    "description": "Clear description with specific numbers",
-    "expected": 12345,
-    "actual": 12346
-  }
-]
-```
-
-Return `[]` if no errors found. Return ONLY the JSON array, no other text.
+Log each error as you find it using the log_issue tool.
 """
 
 RANK_DEDUPE_PROMPT = """\
@@ -135,7 +169,17 @@ class RunConfig:
 
 
 def _calculate_cost(usage: dict, model: str) -> float:
-    """Calculate cost in USD from usage dict."""
+    """Calculate cost in USD from usage dict.
+
+    Prefers OpenRouter's authoritative `cost` field when available.
+    Falls back to naive token×rate calculation (which overestimates
+    because it doesn't account for cached token discounts).
+    """
+    # OpenRouter returns cost directly (accounts for caching discounts)
+    if "cost" in usage and usage["cost"] is not None:
+        return float(usage["cost"])
+
+    # Fallback: naive calculation (no cache discount)
     pricing = MODEL_PRICING.get(model, {"input": 0, "output": 0})
     input_tokens = usage.get("prompt_tokens", 0)
     output_tokens = usage.get("completion_tokens", 0)
@@ -150,8 +194,12 @@ async def _run_detection_pass(
     pdf_name: str,
     client: OpenRouterClient,
     shuffle: bool = True,
+    stagger_max: float = 0.0,
 ) -> tuple[list[dict], dict]:
-    """Run a single detection pass on PDF.
+    """Run a single detection pass on PDF using log_issue tool calls.
+
+    The model calls log_issue() incrementally as it finds errors.
+    We loop, feeding back tool results, until the model stops calling tools.
 
     Args:
         config: Run configuration with seed for shuffling
@@ -159,10 +207,15 @@ async def _run_detection_pass(
         pdf_name: Filename for the PDF
         client: API client
         shuffle: If True, shuffle pages using config.seed
+        stagger_max: Max random delay in seconds before starting (0 = no delay)
 
     Returns:
-        Tuple of (findings list, usage dict)
+        Tuple of (findings list, aggregated usage dict)
     """
+    # Stagger start to avoid thundering herd
+    if stagger_max > 0:
+        delay = random.uniform(0, stagger_max)
+        await asyncio.sleep(delay)
     # Optionally shuffle pages
     if shuffle:
         pdf_to_send = shuffle_pdf_pages(pdf_bytes, config.seed)
@@ -183,27 +236,63 @@ async def _run_detection_pass(
     ]
 
     messages = [{"role": "user", "content": user_content}]
+    tools = [LOG_ISSUE_TOOL]
 
-    # Single pass - no tools, just JSON output
-    response = await client.chat(model=config.model, messages=messages)
-    content = response.get("message", {}).get("content", "")
-    usage = response.get("usage", {})
+    findings: list[dict] = []
+    total_usage: dict = {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0}
+    max_turns = 30  # safety limit
 
-    # Parse JSON array from response
-    findings = []
-    try:
-        json_match = re.search(r"\[[\s\S]*\]", content)
-        if json_match:
-            parsed = json.loads(json_match.group())
-            if isinstance(parsed, list):
-                for item in parsed:
-                    item["_run"] = config.run_id
-                    findings.append(item)
-    except json.JSONDecodeError as e:
-        print(f"[{config.run_id}] JSON parse error: {e}", file=sys.stderr)
+    for turn in range(max_turns):
+        response = await client.chat(model=config.model, messages=messages, tools=tools)
+        msg = response.get("message", {})
+        usage = response.get("usage", {})
+        total_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+        total_usage["completion_tokens"] += usage.get("completion_tokens", 0)
+        if "cost" in usage and usage["cost"] is not None:
+            total_usage["cost"] += float(usage["cost"])
 
-    print(f"[{config.run_id}] Found {len(findings)} errors", file=sys.stderr)
-    return findings, usage
+        tool_calls = msg.get("tool_calls", [])
+
+        # Append assistant message to conversation
+        messages.append(msg)
+
+        if not tool_calls:
+            break
+
+        # Process each tool call
+        for tc in tool_calls:
+            fn = tc.get("function", {})
+            fn_name = fn.get("name", "")
+            call_id = tc.get("id", "")
+
+            if fn_name == "log_issue":
+                try:
+                    args = json.loads(fn.get("arguments", "{}"))
+                    args["_run"] = config.run_id
+                    findings.append(args)
+                    ack = json.dumps(
+                        {"status": "logged", "issue_number": len(findings)}
+                    )
+                except (json.JSONDecodeError, TypeError) as e:
+                    ack = json.dumps({"status": "error", "message": str(e)})
+            else:
+                ack = json.dumps(
+                    {"status": "error", "message": f"unknown tool: {fn_name}"}
+                )
+
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": call_id,
+                    "content": ack,
+                }
+            )
+
+    print(
+        f"[{config.run_id}] Found {len(findings)} errors ({turn + 1} turns)",
+        file=sys.stderr,
+    )
+    return findings, total_usage
 
 
 async def _rank_and_dedupe(
@@ -272,11 +361,13 @@ async def run_ensemble(
     rank_model: str = DEFAULT_RANK_MODEL,
     num_runs: int = DEFAULT_NUM_RUNS,
     shuffle: bool = True,
+    num_launch: int | None = None,
+    stagger_max: float = 0.0,
 ) -> dict:
     """Run ensemble detection with rank/dedupe.
 
     Pipeline:
-    1. Detection: N parallel runs with shuffled page order
+    1. Detection: launch N parallel runs, keep first K to complete
     2. Rank/Dedupe: Gemini Pro organizes and deduplicates findings
 
     Args:
@@ -284,12 +375,18 @@ async def run_ensemble(
         output_path: Output JSON path (default: <pdf>.ensemble.json)
         detect_model: Model for detection phase (default: gemini-3-flash)
         rank_model: Model for rank/dedupe phase (default: gemini-3-pro)
-        num_runs: Number of parallel detection runs (default: 10)
+        num_runs: Number of detection results to keep (default: 10)
         shuffle: If True (default), shuffle PDF pages for each run for diversity
+        num_launch: Total runs to launch (default: same as num_runs, no race)
+        stagger_max: Max random delay in seconds before each run starts
 
     Returns:
         Result dict with prioritized findings and metadata
     """
+    if num_launch is None:
+        num_launch = num_runs
+    num_launch = max(num_launch, num_runs)
+
     output_path = output_path or pdf_path.with_suffix(".ensemble.json")
 
     print(f"Loading {pdf_path}...", file=sys.stderr)
@@ -299,8 +396,14 @@ async def run_ensemble(
 
     mode = "PDF shuffled" if shuffle else "PDF sequential"
     print(f"Mode: {mode}", file=sys.stderr)
+    race_str = (
+        f" (launch {num_launch}, keep {num_runs})" if num_launch > num_runs else ""
+    )
+    stagger_str = f", stagger {stagger_max:.0f}s" if stagger_max > 0 else ""
     print(
-        f"Strategy: {num_runs}x {detect_model.split('/')[-1]} + {rank_model.split('/')[-1]} rank/dedupe",
+        f"Strategy: {num_runs}x {detect_model.split('/')[-1]}"
+        f"{race_str}{stagger_str}"
+        f" + {rank_model.split('/')[-1]} rank/dedupe",
         file=sys.stderr,
     )
 
@@ -308,32 +411,81 @@ async def run_ensemble(
     total_start = time.time()
     total_cost = 0.0
 
-    # Phase 1: Detection (parallel)
+    # Phase 1: Detection
     print(f"\n{'=' * 60}", file=sys.stderr)
     print(
-        f"PHASE 1: Detection ({num_runs}x {detect_model.split('/')[-1]})",
+        f"PHASE 1: Detection ({num_launch}x {detect_model.split('/')[-1]}"
+        f", keep first {num_runs})",
         file=sys.stderr,
     )
     print(f"{'=' * 60}", file=sys.stderr)
 
     configs = [
         RunConfig(run_id=f"run_{i + 1}", model=detect_model, seed=i + 1)
-        for i in range(num_runs)
+        for i in range(num_launch)
     ]
 
-    detection_tasks = [
-        _run_detection_pass(config, pdf_bytes, pdf_path.name, client, shuffle=shuffle)
+    # Create tasks with stagger
+    tasks = [
+        asyncio.create_task(
+            _run_detection_pass(
+                config,
+                pdf_bytes,
+                pdf_path.name,
+                client,
+                shuffle=shuffle,
+                stagger_max=stagger_max,
+            ),
+            name=config.run_id,
+        )
         for config in configs
     ]
 
-    detection_results = await asyncio.gather(*detection_tasks)
-
+    # Race: collect first num_runs successful completions, discard the rest
     all_findings = []
-    for findings, usage in detection_results:
-        all_findings.extend(findings)
-        total_cost += _calculate_cost(usage, detect_model)
+    pending = set(tasks)
+    completed_count = 0
+    failed_count = 0
 
-    print(f"\nPhase 1 complete: {len(all_findings)} raw findings", file=sys.stderr)
+    while pending and completed_count < num_runs:
+        done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            try:
+                findings, usage = task.result()
+                completed_count += 1
+                all_findings.extend(findings)
+                total_cost += _calculate_cost(usage, detect_model)
+                elapsed = time.time() - total_start
+                print(
+                    f"  [{task.get_name()}] done: {len(findings)} findings "
+                    f"({completed_count}/{num_runs} kept, {elapsed:.0f}s)",
+                    file=sys.stderr,
+                )
+            except BaseException as e:
+                failed_count += 1
+                print(
+                    f"  [{task.get_name()}] FAILED: {e}",
+                    file=sys.stderr,
+                )
+
+    # Cancel remaining slow runners
+    cancelled = 0
+    for task in pending:
+        task.cancel()
+        cancelled += 1
+    if cancelled:
+        print(
+            f"  Cancelled {cancelled} slow runners",
+            file=sys.stderr,
+        )
+        # Wait for cancellation to complete
+        await asyncio.gather(*pending, return_exceptions=True)
+
+    print(
+        f"\nPhase 1 complete: {len(all_findings)} raw findings "
+        f"({completed_count} runs kept, {failed_count} failed, {cancelled} cancelled)",
+        file=sys.stderr,
+    )
 
     # Phase 2: Rank and Dedupe
     print(f"\n{'=' * 60}", file=sys.stderr)
@@ -364,10 +516,12 @@ async def run_ensemble(
             "detect_model": detect_model,
             "rank_model": rank_model,
             "num_runs": num_runs,
+            "num_launched": num_launch,
+            "stagger_max": stagger_max,
             "mode": "pdf_shuffled" if shuffle else "pdf_sequential",
             "num_pages": num_pages,
             "elapsed_seconds": round(elapsed, 1),
-            "estimated_cost_usd": round(total_cost, 4),
+            "cost_usd": round(total_cost, 4),
         },
         "high": high,
         "medium": medium,
@@ -421,6 +575,18 @@ async def main():
         action="store_true",
         help="Disable page shuffling (all runs see same page order)",
     )
+    parser.add_argument(
+        "--launch",
+        type=int,
+        default=None,
+        help="Total runs to launch (keep first N fastest). Default: same as --runs",
+    )
+    parser.add_argument(
+        "--stagger",
+        type=float,
+        default=0.0,
+        help="Max random delay in seconds before each run starts (default: 0)",
+    )
 
     args = parser.parse_args()
 
@@ -431,6 +597,8 @@ async def main():
         args.rank_model,
         args.runs,
         shuffle=not args.no_shuffle,
+        num_launch=args.launch,
+        stagger_max=args.stagger,
     )
 
 

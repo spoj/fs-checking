@@ -13,6 +13,7 @@ dependencies = [
 
 [project.scripts]
 fs-check = "scripts.cli:main"
+fs-inject = "scripts.inject_cli:main"
 
 [build-system]
 requires = ["hatchling"]

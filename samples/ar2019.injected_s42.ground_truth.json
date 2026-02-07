@@ -1,0 +1,270 @@
+{
+  "document": "ar2019.pdf",
+  "injection_seed": 42,
+  "description": "10 injected errors",
+  "issues": [
+    {
+      "id": "inject_000",
+      "page": 150,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+26,529): 760,754 \u2192 787,283 on page 150"
+    },
+    {
+      "id": "inject_001",
+      "page": 206,
+      "category": "note_ties",
+      "severity": "minor",
+      "description": "Tie break (+65): 4,823 \u2192 4,888 on page 206"
+    },
+    {
+      "id": "inject_002",
+      "page": 197,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+17,751): 1,736,817 \u2192 1,754,568 on page 197"
+    },
+    {
+      "id": "inject_003",
+      "page": 187,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+105,603): 2,347,011 \u2192 2,452,614 on page 187"
+    },
+    {
+      "id": "inject_004",
+      "page": 204,
+      "category": "note_ties",
+      "severity": "minor",
+      "description": "Tie break (+123): 3,463 \u2192 3,586 on page 204"
+    },
+    {
+      "id": "inject_005",
+      "page": 179,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+384,738): 11,413,312 \u2192 11,798,050 on page 179"
+    },
+    {
+      "id": "inject_006",
+      "page": 146,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Magnitude \u00d710: 16,748 \u2192 167,480 on page 146"
+    },
+    {
+      "id": "inject_007",
+      "page": 151,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Transposition: 1,854,832 \u2192 1,858,432 on page 151"
+    },
+    {
+      "id": "inject_008",
+      "page": 191,
+      "category": "cross_footing",
+      "severity": "minor",
+      "description": "Offset -741: (5,053) \u2192 (5,794) on page 191"
+    },
+    {
+      "id": "inject_009",
+      "page": 246,
+      "category": "cross_footing",
+      "severity": "minor",
+      "description": "Transposition: (15,756) \u2192 (15,576) on page 246"
+    }
+  ],
+  "summary": {
+    "total": 10,
+    "by_category": {
+      "note_ties": 6,
+      "cross_footing": 4
+    },
+    "by_severity": {
+      "material": 6,
+      "minor": 4
+    }
+  },
+  "_injection_details": [
+    {
+      "id": "inject_000",
+      "page": 150,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+26,529): 760,754 \u2192 787,283 on page 150",
+      "original_text": "760,754",
+      "mutated_text": "787,283",
+      "original_value": 760754,
+      "mutated_value": 787283,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        265.6734619140625,
+        646.8955688476562,
+        286.326171875,
+        656.2636108398438
+      ]
+    },
+    {
+      "id": "inject_001",
+      "page": 206,
+      "category": "note_ties",
+      "severity": "minor",
+      "description": "Tie break (+65): 4,823 \u2192 4,888 on page 206",
+      "original_text": "4,823",
+      "mutated_text": "4,888",
+      "original_value": 4823,
+      "mutated_value": 4888,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        427.5606384277344,
+        416.8720397949219,
+        447.88067626953125,
+        426.2400207519531
+      ]
+    },
+    {
+      "id": "inject_002",
+      "page": 197,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+17,751): 1,736,817 \u2192 1,754,568 on page 197",
+      "original_text": "1,736,817",
+      "mutated_text": "1,754,568",
+      "original_value": 1736817,
+      "mutated_value": 1754568,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        498.8158264160156,
+        341.8164367675781,
+        532.8958740234375,
+        351.1844177246094
+      ]
+    },
+    {
+      "id": "inject_003",
+      "page": 187,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+105,603): 2,347,011 \u2192 2,452,614 on page 187",
+      "original_text": "2,347,011",
+      "mutated_text": "2,452,614",
+      "original_value": 2347011,
+      "mutated_value": 2452614,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        505.576171875,
+        310.9030456542969,
+        532.8401489257812,
+        320.2710266113281
+      ]
+    },
+    {
+      "id": "inject_004",
+      "page": 204,
+      "category": "note_ties",
+      "severity": "minor",
+      "description": "Tie break (+123): 3,463 \u2192 3,586 on page 204",
+      "original_text": "3,463",
+      "mutated_text": "3,586",
+      "original_value": 3463,
+      "mutated_value": 3586,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        364.4582824707031,
+        653.5574951171875,
+        376.97467041015625,
+        662.925537109375
+      ]
+    },
+    {
+      "id": "inject_005",
+      "page": 179,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+384,738): 11,413,312 \u2192 11,798,050 on page 179",
+      "original_text": "11,413,312",
+      "mutated_text": "11,798,050",
+      "original_value": 11413312,
+      "mutated_value": 11798050,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        279.6904296875,
+        601.0160522460938,
+        320.33050537109375,
+        610.3840942382812
+      ]
+    },
+    {
+      "id": "inject_006",
+      "page": 146,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Magnitude \u00d710: 16,748 \u2192 167,480 on page 146",
+      "original_text": "16,748",
+      "mutated_text": "167,480",
+      "original_value": 16748,
+      "mutated_value": 167480,
+      "mutation_kind": "magnitude",
+      "bbox": [
+        431.4757995605469,
+        214.1730499267578,
+        456.3878479003906,
+        223.54104614257812
+      ]
+    },
+    {
+      "id": "inject_007",
+      "page": 151,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Transposition: 1,854,832 \u2192 1,858,432 on page 151",
+      "original_text": "1,854,832",
+      "mutated_text": "1,858,432",
+      "original_value": 1854832,
+      "mutated_value": 1858432,
+      "mutation_kind": "transposition",
+      "bbox": [
+        508.9829406738281,
+        710.8731079101562,
+        532.8389892578125,
+        720.2411499023438
+      ]
+    },
+    {
+      "id": "inject_008",
+      "page": 191,
+      "category": "cross_footing",
+      "severity": "minor",
+      "description": "Offset -741: (5,053) \u2192 (5,794) on page 191",
+      "original_text": "(5,053)",
+      "mutated_text": "(5,794)",
+      "original_value": -5053,
+      "mutated_value": -5794,
+      "mutation_kind": "offset",
+      "bbox": [
+        358.00885009765625,
+        596.9254760742188,
+        382.4248962402344,
+        606.2935180664062
+      ]
+    },
+    {
+      "id": "inject_009",
+      "page": 246,
+      "category": "cross_footing",
+      "severity": "minor",
+      "description": "Transposition: (15,756) \u2192 (15,576) on page 246",
+      "original_text": "(15,756)",
+      "mutated_text": "(15,576)",
+      "original_value": -15756,
+      "mutated_value": -15576,
+      "mutation_kind": "transposition",
+      "bbox": [
+        156.50015258789062,
+        409.57745361328125,
+        177.88096618652344,
+        418.9454345703125
+      ]
+    }
+  ]
+}

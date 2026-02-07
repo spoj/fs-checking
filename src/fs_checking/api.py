@@ -56,7 +56,11 @@ def add_cache_control(messages: list[dict]) -> list[dict]:
     Finds the last user or system message and adds cache_control to it.
     This tells Anthropic models to cache everything up to this point.
     """
-    messages = [m.copy() for m in messages]  # Don't mutate original
+    import copy
+
+    messages = copy.deepcopy(
+        messages
+    )  # Don't mutate original (deep for nested content)
 
     # Find last user or system message (going backwards)
     for i in range(len(messages) - 1, -1, -1):
@@ -172,21 +176,28 @@ class OpenRouterClient:
                     )
 
                 response_text = response.text
-                try:
-                    response_data = json.loads(response_text) if response_text else {}
-                except json.JSONDecodeError:
+                # Retry empty/whitespace-only responses (transient proxy issue)
+                if not response_text or not response_text.strip():
                     if attempt < self.max_retries:
-                        jitter = random.uniform(0, 5)
+                        attempt += 1
+                        jitter = random.uniform(0, 3)
                         print(
-                            f"[Retry {attempt + 1}/{self.max_retries}] Invalid JSON (status {response.status_code}): {response_text[:200]}",
+                            f"[Retry {attempt}/{self.max_retries}] Empty response (status {response.status_code})",
                             file=sys.stderr,
                         )
                         await asyncio.sleep(backoff + jitter)
                         backoff = min(backoff * 2, max_backoff)
-                        attempt += 1
                         continue
                     raise RuntimeError(
-                        f"Invalid JSON response (status {response.status_code}): {response_text[:500]}"
+                        f"Empty response after {self.max_retries} retries (status {response.status_code})"
+                    )
+
+                try:
+                    response_data = json.loads(response_text)
+                except json.JSONDecodeError:
+                    # Non-empty but malformed — don't retry, let caller handle
+                    raise RuntimeError(
+                        f"Invalid JSON response (status {response.status_code}): {response_text[:200]}"
                     )
 
                 # Success
