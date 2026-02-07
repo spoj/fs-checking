@@ -1,0 +1,749 @@
+{
+  "document": "ar2019.pdf",
+  "injection_seed": 42,
+  "description": "29 injected errors",
+  "issues": [
+    {
+      "id": "inject_000",
+      "page": 145,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+188,625): 11,413,312 \u2192 11,601,937 on page 145"
+    },
+    {
+      "id": "inject_001",
+      "page": 148,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+74,304): 2,298,948 \u2192 2,373,252 on page 148"
+    },
+    {
+      "id": "inject_002",
+      "page": 150,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+25,117): 655,687 \u2192 680,804 on page 150"
+    },
+    {
+      "id": "inject_003",
+      "page": 152,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+10,515): 317,102 \u2192 327,617 on page 152"
+    },
+    {
+      "id": "inject_004",
+      "page": 145,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Offset +50,000: 1,191,591 \u2192 1,241,591 on page 145"
+    },
+    {
+      "id": "inject_005",
+      "page": 149,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Offset -80,000: 1,250,520 \u2192 1,170,520 on page 149"
+    },
+    {
+      "id": "inject_006",
+      "page": 179,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Magnitude \u00d710: 8,834,482 \u2192 88,344,820 on page 179"
+    },
+    {
+      "id": "inject_007",
+      "page": 153,
+      "category": "cross_footing",
+      "severity": "minor",
+      "description": "Transposition: 612,391 \u2192 612,931 on page 153"
+    },
+    {
+      "id": "inject_008",
+      "page": 182,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Sign flip: 4,511 \u2192 (4,511) on page 182"
+    },
+    {
+      "id": "inject_009",
+      "page": 183,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Offset +5,000: 10,962 \u2192 15,962 on page 183"
+    },
+    {
+      "id": "inject_010",
+      "page": 194,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+5,793): 250,537 \u2192 256,330 on page 194"
+    },
+    {
+      "id": "inject_011",
+      "page": 197,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Sign flip: 932,167 \u2192 (932,167) on page 197"
+    },
+    {
+      "id": "inject_012",
+      "page": 206,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Offset +25,000: 491,798 \u2192 516,798 on page 206"
+    },
+    {
+      "id": "inject_013",
+      "page": 211,
+      "category": "cross_footing",
+      "severity": "minor",
+      "description": "Transposition: (13,951) \u2192 (13,591) on page 211"
+    },
+    {
+      "id": "inject_014",
+      "page": 246,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Magnitude \u00d70.1: 13,534,209 \u2192 1,353,420 on page 246"
+    },
+    {
+      "id": "inject_015",
+      "page": 150,
+      "category": "cross_reference",
+      "severity": "material",
+      "description": "Wrong note reference: '(Note 25)' \u2192 '(Note 26)' on page 150"
+    },
+    {
+      "id": "inject_016",
+      "page": 145,
+      "category": "period_error",
+      "severity": "material",
+      "description": "Year swap: 'For the year ended 31 December 2019' \u2192 'For the year ended 31 December 2018' on page 145"
+    },
+    {
+      "id": "inject_017",
+      "page": 148,
+      "category": "period_error",
+      "severity": "material",
+      "description": "Year swap: '2019' \u2192 '2018' on page 148"
+    },
+    {
+      "id": "inject_018",
+      "page": 145,
+      "category": "unit_error",
+      "severity": "material",
+      "description": "Currency swap: 'US$\u2019000' \u2192 'HK$\u2019000' on page 145"
+    },
+    {
+      "id": "inject_019",
+      "page": 145,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Classification label swap: 'Continuing Operations' \u2192 'Discontinued Operations' on page 145"
+    },
+    {
+      "id": "inject_020",
+      "page": 148,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Classification label swap: 'Non-current assets' \u2192 'Non-current liabilities' on page 148"
+    },
+    {
+      "id": "inject_021",
+      "page": 148,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Direction label swap: 'Due from related companies' \u2192 'Due to related companies' on page 148"
+    },
+    {
+      "id": "inject_022",
+      "page": 145,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Sign-word label swap: 'Gross profit' \u2192 'Gross loss' on page 145"
+    },
+    {
+      "id": "inject_023",
+      "page": 152,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Direction label swap: 'Net cash inflow from operating activities' \u2192 'Net cash outflow from operating activities' on page 152"
+    },
+    {
+      "id": "inject_024",
+      "page": 148,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Restated label removed: removed '(Restated)' on page 148"
+    },
+    {
+      "id": "inject_025",
+      "page": 154,
+      "category": "cross_reference",
+      "severity": "minor",
+      "description": "Wrong accounting standard reference: 'HKFRS 16' \u2192 'HKFRS 17' on page 154"
+    },
+    {
+      "id": "inject_026",
+      "page": 194,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Sign-word label swap: '21 Trade and Other Receivables' \u2192 '21 Trade and Other Payables' on page 194"
+    },
+    {
+      "id": "inject_027",
+      "page": 179,
+      "category": "unit_error",
+      "severity": "material",
+      "description": "Currency swap: 'US$\u2019000' \u2192 'HK$\u2019000' on page 179"
+    },
+    {
+      "id": "inject_028",
+      "page": 156,
+      "category": "period_error",
+      "severity": "material",
+      "description": "Year swap: 'As at 1 January 2018' \u2192 'As at 1 January 2019' on page 156"
+    }
+  ],
+  "summary": {
+    "total": 29,
+    "by_category": {
+      "note_ties": 5,
+      "cross_footing": 10,
+      "cross_reference": 2,
+      "period_error": 3,
+      "unit_error": 2,
+      "presentation": 7
+    },
+    "by_severity": {
+      "material": 26,
+      "minor": 3
+    }
+  },
+  "_injection_details": [
+    {
+      "id": "inject_000",
+      "page": 145,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+188,625): 11,413,312 \u2192 11,601,937 on page 145",
+      "original_text": "11,413,312",
+      "mutated_text": "11,601,937",
+      "original_value": 11413312,
+      "mutated_value": 11601937,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        415.75341796875,
+        214.17201232910156,
+        456.39349365234375,
+        223.54000854492188
+      ]
+    },
+    {
+      "id": "inject_001",
+      "page": 148,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+74,304): 2,298,948 \u2192 2,373,252 on page 148",
+      "original_text": "2,298,948",
+      "mutated_text": "2,373,252",
+      "original_value": 2298948,
+      "mutated_value": 2373252,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        343.95562744140625,
+        222.1570587158203,
+        380.0036926269531,
+        231.52505493164062
+      ]
+    },
+    {
+      "id": "inject_002",
+      "page": 150,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+25,117): 655,687 \u2192 680,804 on page 150",
+      "original_text": "655,687",
+      "mutated_text": "680,804",
+      "original_value": 655687,
+      "mutated_value": 680804,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        430.111572265625,
+        241.50343322753906,
+        450.7642822265625,
+        250.87142944335938
+      ]
+    },
+    {
+      "id": "inject_003",
+      "page": 152,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+10,515): 317,102 \u2192 327,617 on page 152",
+      "original_text": "317,102",
+      "mutated_text": "327,617",
+      "original_value": 317102,
+      "mutated_value": 327617,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        427.0357971191406,
+        217.33741760253906,
+        456.53985595703125,
+        226.70541381835938
+      ]
+    },
+    {
+      "id": "inject_004",
+      "page": 145,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Offset +50,000: 1,191,591 \u2192 1,241,591 on page 145",
+      "original_text": "1,191,591",
+      "mutated_text": "1,241,591",
+      "original_value": 1191591,
+      "mutated_value": 1241591,
+      "mutation_kind": "offset",
+      "bbox": [
+        420.343017578125,
+        241.99122619628906,
+        456.3910827636719,
+        251.35922241210938
+      ]
+    },
+    {
+      "id": "inject_005",
+      "page": 149,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Offset -80,000: 1,250,520 \u2192 1,170,520 on page 149",
+      "original_text": "1,250,520",
+      "mutated_text": "1,170,520",
+      "original_value": 1250520,
+      "mutated_value": 1170520,
+      "mutation_kind": "offset",
+      "bbox": [
+        343.8060302734375,
+        234.8418731689453,
+        379.8540954589844,
+        244.20986938476562
+      ]
+    },
+    {
+      "id": "inject_006",
+      "page": 179,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Magnitude \u00d710: 8,834,482 \u2192 88,344,820 on page 179",
+      "original_text": "8,834,482",
+      "mutated_text": "88,344,820",
+      "original_value": 8834482,
+      "mutated_value": 88344820,
+      "mutation_kind": "magnitude",
+      "bbox": [
+        420.34381103515625,
+        237.24940490722656,
+        456.3918762207031,
+        246.61740112304688
+      ]
+    },
+    {
+      "id": "inject_007",
+      "page": 153,
+      "category": "cross_footing",
+      "severity": "minor",
+      "description": "Transposition: 612,391 \u2192 612,931 on page 153",
+      "original_text": "612,391",
+      "mutated_text": "612,931",
+      "original_value": 612391,
+      "mutated_value": 612931,
+      "mutation_kind": "transposition",
+      "bbox": [
+        426.88616943359375,
+        245.53260803222656,
+        456.3902282714844,
+        254.90060424804688
+      ]
+    },
+    {
+      "id": "inject_008",
+      "page": 182,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Sign flip: 4,511 \u2192 (4,511) on page 182",
+      "original_text": "4,511",
+      "mutated_text": "(4,511)",
+      "original_value": 4511,
+      "mutated_value": -4511,
+      "mutation_kind": "sign_flip",
+      "bbox": [
+        436.0654296875,
+        278.9030456542969,
+        456.3854675292969,
+        288.2710266113281
+      ]
+    },
+    {
+      "id": "inject_009",
+      "page": 183,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Offset +5,000: 10,962 \u2192 15,962 on page 183",
+      "original_text": "10,962",
+      "mutated_text": "15,962",
+      "original_value": 10962,
+      "mutated_value": 15962,
+      "mutation_kind": "offset",
+      "bbox": [
+        431.47662353515625,
+        625.0612182617188,
+        456.388671875,
+        634.4292602539062
+      ]
+    },
+    {
+      "id": "inject_010",
+      "page": 194,
+      "category": "note_ties",
+      "severity": "material",
+      "description": "Tie break (+5,793): 250,537 \u2192 256,330 on page 194",
+      "original_text": "250,537",
+      "mutated_text": "256,330",
+      "original_value": 250537,
+      "mutated_value": 256330,
+      "mutation_kind": "tie_break",
+      "bbox": [
+        426.88623046875,
+        265.6974792480469,
+        456.3902893066406,
+        275.0654602050781
+      ]
+    },
+    {
+      "id": "inject_011",
+      "page": 197,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Sign flip: 932,167 \u2192 (932,167) on page 197",
+      "original_text": "932,167",
+      "mutated_text": "(932,167)",
+      "original_value": 932167,
+      "mutated_value": -932167,
+      "mutation_kind": "sign_flip",
+      "bbox": [
+        418.3822326660156,
+        211.41419982910156,
+        447.88629150390625,
+        220.78219604492188
+      ]
+    },
+    {
+      "id": "inject_012",
+      "page": 206,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Offset +25,000: 491,798 \u2192 516,798 on page 206",
+      "original_text": "491,798",
+      "mutated_text": "516,798",
+      "original_value": 491798,
+      "mutated_value": 516798,
+      "mutation_kind": "offset",
+      "bbox": [
+        418.3814392089844,
+        234.41419982910156,
+        447.885498046875,
+        243.78219604492188
+      ]
+    },
+    {
+      "id": "inject_013",
+      "page": 211,
+      "category": "cross_footing",
+      "severity": "minor",
+      "description": "Transposition: (13,951) \u2192 (13,591) on page 211",
+      "original_text": "(13,951)",
+      "mutated_text": "(13,591)",
+      "original_value": -13951,
+      "mutated_value": -13591,
+      "mutation_kind": "transposition",
+      "bbox": [
+        420.16302490234375,
+        270.4142150878906,
+        450.70709228515625,
+        279.7821960449219
+      ]
+    },
+    {
+      "id": "inject_014",
+      "page": 246,
+      "category": "cross_footing",
+      "severity": "material",
+      "description": "Magnitude \u00d70.1: 13,534,209 \u2192 1,353,420 on page 246",
+      "original_text": "13,534,209",
+      "mutated_text": "1,353,420",
+      "original_value": 13534209,
+      "mutated_value": 1353420,
+      "mutation_kind": "magnitude",
+      "bbox": [
+        228.28262329101562,
+        275.9342346191406,
+        255.24102783203125,
+        285.3022155761719
+      ]
+    },
+    {
+      "id": "inject_015",
+      "page": 150,
+      "category": "cross_reference",
+      "severity": "material",
+      "description": "Wrong note reference: '(Note 25)' \u2192 '(Note 26)' on page 150",
+      "original_text": "(Note 25)",
+      "mutated_text": "(Note 26)",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "note_ref_wrong",
+      "bbox": [
+        221.39706420898438,
+        227.16822814941406,
+        245.2026824951172,
+        236.53622436523438
+      ]
+    },
+    {
+      "id": "inject_016",
+      "page": 145,
+      "category": "period_error",
+      "severity": "material",
+      "description": "Year swap: 'For the year ended 31 December 2019' \u2192 'For the year ended 31 December 2018' on page 145",
+      "original_text": "For the year ended 31 December 2019",
+      "mutated_text": "For the year ended 31 December 2018",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "year_swap",
+      "bbox": [
+        74.86609649658203,
+        104.84254455566406,
+        219.5701446533203,
+        114.7960433959961
+      ]
+    },
+    {
+      "id": "inject_017",
+      "page": 148,
+      "category": "period_error",
+      "severity": "material",
+      "description": "Year swap: '2019' \u2192 '2018' on page 148",
+      "original_text": "2019",
+      "mutated_text": "2018",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "year_swap",
+      "bbox": [
+        361.4828186035156,
+        170.16822814941406,
+        379.8508605957031,
+        179.53622436523438
+      ]
+    },
+    {
+      "id": "inject_018",
+      "page": 145,
+      "category": "unit_error",
+      "severity": "material",
+      "description": "Currency swap: 'US$\u2019000' \u2192 'HK$\u2019000' on page 145",
+      "original_text": "US$\u2019000",
+      "mutated_text": "HK$\u2019000",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "currency_swap",
+      "bbox": [
+        425.9990234375,
+        172.16822814941406,
+        456.3830871582031,
+        181.53622436523438
+      ]
+    },
+    {
+      "id": "inject_019",
+      "page": 145,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Classification label swap: 'Continuing Operations' \u2192 'Discontinued Operations' on page 145",
+      "original_text": "Continuing Operations",
+      "mutated_text": "Discontinued Operations",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "label_swap_classification",
+      "bbox": [
+        62.363006591796875,
+        200.3378448486328,
+        143.03501892089844,
+        209.70584106445312
+      ]
+    },
+    {
+      "id": "inject_020",
+      "page": 148,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Classification label swap: 'Non-current assets' \u2192 'Non-current liabilities' on page 148",
+      "original_text": "Non-current assets",
+      "mutated_text": "Non-current liabilities",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "label_swap_classification",
+      "bbox": [
+        62.361236572265625,
+        209.1730499267578,
+        131.76124572753906,
+        218.54104614257812
+      ]
+    },
+    {
+      "id": "inject_021",
+      "page": 148,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Direction label swap: 'Due from related companies' \u2192 'Due to related companies' on page 148",
+      "original_text": "Due from related companies",
+      "mutated_text": "Due to related companies",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "label_swap_direction",
+      "bbox": [
+        70.35324096679688,
+        412.1435241699219,
+        169.6892547607422,
+        421.5115051269531
+      ]
+    },
+    {
+      "id": "inject_022",
+      "page": 145,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Sign-word label swap: 'Gross profit' \u2192 'Gross loss' on page 145",
+      "original_text": "Gross profit",
+      "mutated_text": "Gross loss",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "label_swap_sign_word",
+      "bbox": [
+        62.362213134765625,
+        241.99122619628906,
+        103.65023040771484,
+        251.35922241210938
+      ]
+    },
+    {
+      "id": "inject_023",
+      "page": 152,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Direction label swap: 'Net cash inflow from operating activities' \u2192 'Net cash outflow from operating activities' on page 152",
+      "original_text": "Net cash inflow from operating activities",
+      "mutated_text": "Net cash outflow from operating activities",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "label_swap_direction",
+      "bbox": [
+        62.3621826171875,
+        271.8270568847656,
+        208.40213012695312,
+        281.1950378417969
+      ]
+    },
+    {
+      "id": "inject_024",
+      "page": 148,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Restated label removed: removed '(Restated)' on page 148",
+      "original_text": "(Restated)",
+      "mutated_text": "",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "restated_label",
+      "bbox": [
+        419.954833984375,
+        195.8378448486328,
+        456.38677978515625,
+        205.20584106445312
+      ]
+    },
+    {
+      "id": "inject_025",
+      "page": 154,
+      "category": "cross_reference",
+      "severity": "minor",
+      "description": "Wrong accounting standard reference: 'HKFRS 16' \u2192 'HKFRS 17' on page 154",
+      "original_text": "HKFRS 16",
+      "mutated_text": "HKFRS 17",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "standard_ref_wrong",
+      "bbox": [
+        102.0469970703125,
+        438.8825988769531,
+        140.7220001220703,
+        448.8360900878906
+      ]
+    },
+    {
+      "id": "inject_026",
+      "page": 194,
+      "category": "presentation",
+      "severity": "material",
+      "description": "Sign-word label swap: '21 Trade and Other Receivables' \u2192 '21 Trade and Other Payables' on page 194",
+      "original_text": "21 Trade and Other Receivables",
+      "mutated_text": "21 Trade and Other Payables",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "label_swap_sign_word",
+      "bbox": [
+        56.692901611328125,
+        582.5570068359375,
+        237.6325225830078,
+        596.6090087890625
+      ]
+    },
+    {
+      "id": "inject_027",
+      "page": 179,
+      "category": "unit_error",
+      "severity": "material",
+      "description": "Currency swap: 'US$\u2019000' \u2192 'HK$\u2019000' on page 179",
+      "original_text": "US$\u2019000",
+      "mutated_text": "HK$\u2019000",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "currency_swap",
+      "bbox": [
+        425.9990234375,
+        209.07899475097656,
+        456.3830871582031,
+        218.44699096679688
+      ]
+    },
+    {
+      "id": "inject_028",
+      "page": 156,
+      "category": "period_error",
+      "severity": "material",
+      "description": "Year swap: 'As at 1 January 2018' \u2192 'As at 1 January 2019' on page 156",
+      "original_text": "As at 1 January 2018",
+      "mutated_text": "As at 1 January 2019",
+      "original_value": 0,
+      "mutated_value": 0,
+      "mutation_kind": "year_swap",
+      "bbox": [
+        395.2309875488281,
+        290.9220275878906,
+        469.3189697265625,
+        300.2900085449219
+      ]
+    }
+  ]
+}
