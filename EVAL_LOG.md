@@ -178,7 +178,22 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 
 **Missed (5/29):** inject_014 (magnitude ÷10 p246 — outside FS pages), inject_015 (note ref off-by-one), inject_017 (year swap column header), inject_021 (Due from→to), inject_022 (Gross profit→loss label — math caught but not label)
 
-**Key takeaway:** 150dpi on 110 FS pages is the best visual-only config: higher recall than 100dpi full-doc (83.9% vs 81.2%), faster (435s vs 685s), cheaper ($3.67 vs $4.80). inject_014 is missed because p246 (financial summary) is outside the FS page range. The 4 remaining misses are genuinely subtle presentation errors.
+**Key takeaway:** 150dpi on 110 FS pages is the best visual-only config: higher recall than 100dpi full-doc (83.9% vs 81.2%), faster (435s vs 685s), cheaper ($3.67 vs $4.80). The 5 remaining misses are genuinely subtle presentation errors.
+
+### 2026-02-08 — 25x Flash, race 30/25, visual FS-only 150dpi (110 pages) — RUN 2
+
+- **Config**: Same as run 1.
+- **Recall**: 28/29 (97.1%) — up from 83.9%
+- **Precision**: 73.9% (34 TP, 12 FP)
+- **F1**: 84.0%
+- **Cost**: $3.87
+- **Time**: 566s
+- **Raw findings**: 332 (42 from partial harvest)
+- **Unique after dedupe**: 46 (H:25 M:16 L:5) — vs 28 in r1
+
+**Only missed inject_015 (note ref off-by-one Note 25→26).** Caught inject_014 (magnitude ÷10 p246) and inject_022 (Gross profit→loss label) which r1 missed.
+
+**Observation:** Large run-to-run variance (83.9% vs 97.1% recall). The ranker kept 46 vs 28 unique findings — less aggressive merging in r2 preserved more distinct errors. This confirms the ranker's merge behavior is the main source of eval variance, not detection coverage.
 
 ### 2026-02-07 — CONTROL: 1x Gemini 3 Pro, single pass, no shuffle (full PDF)
 
