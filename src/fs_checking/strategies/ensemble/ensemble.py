@@ -410,7 +410,7 @@ async def run_ensemble(
     num_launch: int | None = None,
     stagger_max: float = 0.0,
     force_visual: bool = False,
-    visual_dpi: int = 150,
+    visual_dpi: int = 100,
     visual_quality: int = 70,
 ) -> dict:
     """Run ensemble detection with rank/dedupe.
@@ -681,8 +681,8 @@ async def main():
     parser.add_argument(
         "--visual-dpi",
         type=int,
-        default=150,
-        help="DPI for rasterization (default: 150)",
+        default=100,
+        help="DPI for rasterization (default: 100)",
     )
     parser.add_argument(
         "--visual-quality",
