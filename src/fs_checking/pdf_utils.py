@@ -2,11 +2,9 @@
 
 Provides:
 - pdf_to_images: Convert PDF pages to WebP/JPEG images
-- pdf_to_image_content: Convert PDF to OpenRouter image content blocks
+- rasterize_pdf: Strip text layer, produce image-only PDF
 - shuffle_pdf_pages: Lossless page reorder for ensemble diversity
 """
-
-import base64
 
 import fitz  # PyMuPDF
 
@@ -55,55 +53,47 @@ def pdf_to_images(
     return images
 
 
-def pdf_to_image_content(
+def rasterize_pdf(
     pdf_bytes: bytes,
     dpi: int = 150,
     quality: int = 70,
-    fmt: str = "webp",
-    shuffle_seed: int | None = None,
-) -> list[dict]:
-    """Convert PDF pages to OpenRouter-compatible image content blocks.
+) -> bytes:
+    """Rasterize a PDF: render each page as an image and recombine into a new PDF.
 
-    Each page gets a text label with its original document page number,
-    followed by the rendered image. Pages can optionally be shuffled
-    for ensemble diversity while preserving page number labels.
+    The output PDF contains only images — no embedded text, no selectable text,
+    no hidden text layer. Forces the model to rely purely on visual recognition.
+
+    Uses JPEG internally (PyMuPDF's insert_image doesn't support WebP).
 
     Args:
-        pdf_bytes: Raw PDF file content
+        pdf_bytes: Original PDF file content
         dpi: Render resolution (default 150)
-        quality: Image quality (default 70)
-        fmt: Image format — "webp" (default, ~50% smaller) or "jpeg"
-        shuffle_seed: If set, shuffle the page order using this seed.
-            Page number labels are preserved so the model can still
-            report errors by document page number.
+        quality: JPEG quality (default 70)
 
     Returns:
-        List of content block dicts ready for OpenRouter messages API.
+        New PDF bytes with image-only pages (same page count, same page sizes).
     """
-    import random as _random
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    zoom = dpi / 72.0
+    matrix = fitz.Matrix(zoom, zoom)
 
-    mime = f"image/{fmt}"
-    images = pdf_to_images(pdf_bytes, dpi=dpi, quality=quality, fmt=fmt)
-    num_pages = len(images)
+    out = fitz.open()
+    try:
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            pix = page.get_pixmap(matrix=matrix, colorspace=fitz.csRGB)
+            jpg_bytes = pix.tobytes("jpeg", quality)
 
-    # Build (page_number_1based, image_bytes) pairs
-    pages = list(enumerate(images, 1))
+            # Create a new page matching original dimensions
+            orig_rect = page.rect
+            new_page = out.new_page(width=orig_rect.width, height=orig_rect.height)
+            new_page.insert_image(orig_rect, stream=jpg_bytes)
+    finally:
+        doc.close()
 
-    if shuffle_seed is not None:
-        _random.seed(shuffle_seed)
-        _random.shuffle(pages)
-
-    content: list[dict] = []
-    for page_num, img_bytes in pages:
-        content.append({"type": "text", "text": f"[Page {page_num} of {num_pages}]"})
-        b64 = base64.b64encode(img_bytes).decode()
-        content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:{mime};base64,{b64}"},
-            }
-        )
-    return content
+    result = out.tobytes(deflate=True)
+    out.close()
+    return result
 
 
 def get_page_count(pdf_bytes: bytes) -> int:

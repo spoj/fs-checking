@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ...api import OpenRouterClient
-from ...pdf_utils import get_page_count, pdf_to_image_content, shuffle_pdf_pages
+from ...pdf_utils import get_page_count, rasterize_pdf, shuffle_pdf_pages
 
 DEFAULT_DETECT_MODEL = "google/gemini-3-flash-preview"
 DEFAULT_RANK_MODEL = "google/gemini-3-pro-preview"
@@ -232,10 +232,6 @@ async def _run_detection_pass(
     shuffle: bool = True,
     stagger_max: float = 0.0,
     partial_results: dict | None = None,
-    use_images: bool = False,
-    image_dpi: int = 150,
-    image_quality: int = 70,
-    image_format: str = "webp",
 ) -> tuple[list[dict], dict]:
     """Run a single detection pass on PDF using log_issue tool calls.
 
@@ -244,18 +240,13 @@ async def _run_detection_pass(
 
     Args:
         config: Run configuration with seed for shuffling
-        pdf_bytes: Original PDF bytes
+        pdf_bytes: Original PDF bytes (already rasterized if force_visual)
         pdf_name: Filename for the PDF
         client: API client
         shuffle: If True, shuffle pages using config.seed
         stagger_max: Max random delay in seconds before starting (0 = no delay)
         partial_results: Shared dict keyed by run_id. Findings are written here
             as they arrive so they survive task cancellation in race mode.
-        use_images: If True, convert PDF pages to images instead of
-            sending raw PDF. Useful for models with poor native PDF support.
-        image_dpi: Resolution for image conversion (default 150).
-        image_quality: Image quality for conversion (default 70).
-        image_format: "webp" (default) or "jpeg".
 
     Returns:
         Tuple of (findings list, aggregated usage dict)
@@ -265,34 +256,24 @@ async def _run_detection_pass(
         delay = random.uniform(0, stagger_max)
         await asyncio.sleep(delay)
 
-    # Build message content
-    if use_images:
-        # Image mode: render pages, shuffle at image level
-        user_content: list[dict] = pdf_to_image_content(
-            pdf_bytes,
-            dpi=image_dpi,
-            quality=image_quality,
-            fmt=image_format,
-            shuffle_seed=config.seed if shuffle else None,
-        )
-        user_content.append({"type": "text", "text": DETECT_PROMPT})
+    # Shuffle pages if requested
+    if shuffle:
+        pdf_to_send = shuffle_pdf_pages(pdf_bytes, config.seed)
     else:
-        # Native PDF mode: shuffle at PDF level (lossless page reorder)
-        if shuffle:
-            pdf_to_send = shuffle_pdf_pages(pdf_bytes, config.seed)
-        else:
-            pdf_to_send = pdf_bytes
-        pdf_b64 = base64.b64encode(pdf_to_send).decode()
-        user_content = [
-            {
-                "type": "file",
-                "file": {
-                    "filename": pdf_name,
-                    "file_data": f"data:application/pdf;base64,{pdf_b64}",
-                },
+        pdf_to_send = pdf_bytes
+
+    # Build message with PDF
+    pdf_b64 = base64.b64encode(pdf_to_send).decode()
+    user_content: list[dict] = [
+        {
+            "type": "file",
+            "file": {
+                "filename": pdf_name,
+                "file_data": f"data:application/pdf;base64,{pdf_b64}",
             },
-            {"type": "text", "text": DETECT_PROMPT},
-        ]
+        },
+        {"type": "text", "text": DETECT_PROMPT},
+    ]
 
     messages = [{"role": "user", "content": user_content}]
     tools = [LOG_ISSUE_TOOL]
@@ -428,16 +409,16 @@ async def run_ensemble(
     shuffle: bool = True,
     num_launch: int | None = None,
     stagger_max: float = 0.0,
-    use_images: bool = False,
-    image_dpi: int = 150,
-    image_quality: int = 70,
-    image_format: str = "webp",
+    force_visual: bool = False,
+    visual_dpi: int = 150,
+    visual_quality: int = 70,
 ) -> dict:
     """Run ensemble detection with rank/dedupe.
 
     Pipeline:
-    1. Detection: launch N parallel runs, keep first K to complete
-    2. Rank/Dedupe: Gemini Pro organizes and deduplicates findings
+    1. (Optional) Rasterize PDF to strip text layer
+    2. Detection: launch N parallel runs, keep first K to complete
+    3. Rank/Dedupe: Gemini Pro organizes and deduplicates findings
 
     Args:
         pdf_path: Path to PDF file
@@ -448,12 +429,11 @@ async def run_ensemble(
         shuffle: If True (default), shuffle PDF pages for each run for diversity
         num_launch: Total runs to launch (default: same as num_runs, no race)
         stagger_max: Max random delay in seconds before each run starts
-        use_images: If True, pre-render PDF pages as images instead of
-            sending native PDF. Increases token count but may help models
-            that struggle with native PDF parsing.
-        image_dpi: Resolution for image pre-rendering (default 150).
-        image_quality: Image quality for pre-rendering (default 70).
-        image_format: "webp" (default, ~50% smaller) or "jpeg".
+        force_visual: If True, rasterize PDF (render pages as images, recombine
+            into a new PDF with no text layer). Forces the model to rely on
+            visual recognition only — no embedded/selectable text.
+        visual_dpi: Resolution for rasterization (default 150).
+        visual_quality: JPEG quality for rasterization (default 70).
 
     Returns:
         Result dict with prioritized findings and metadata
@@ -469,8 +449,22 @@ async def run_ensemble(
     num_pages = get_page_count(pdf_bytes)
     print(f"Pages: {num_pages}", file=sys.stderr)
 
-    if use_images:
-        mode = f"{image_format.upper()} images ({image_dpi}dpi q{image_quality})"
+    # Rasterize: strip text layer, force visual-only recognition
+    if force_visual:
+        print(
+            f"Rasterizing ({visual_dpi}dpi q{visual_quality})...",
+            file=sys.stderr,
+        )
+        raster_start = time.time()
+        pdf_bytes = rasterize_pdf(pdf_bytes, dpi=visual_dpi, quality=visual_quality)
+        raster_elapsed = time.time() - raster_start
+        print(
+            f"Rasterized: {len(pdf_bytes) / 1024 / 1024:.1f} MB ({raster_elapsed:.1f}s)",
+            file=sys.stderr,
+        )
+
+    if force_visual:
+        mode = f"visual-only ({visual_dpi}dpi q{visual_quality})"
     else:
         mode = "native PDF"
     mode += ", shuffled" if shuffle else ", sequential"
@@ -518,10 +512,6 @@ async def run_ensemble(
                 shuffle=shuffle,
                 stagger_max=stagger_max,
                 partial_results=partial_results,
-                use_images=use_images,
-                image_dpi=image_dpi,
-                image_quality=image_quality,
-                image_format=image_format,
             ),
             name=config.run_id,
         )
@@ -613,7 +603,7 @@ async def run_ensemble(
             "num_runs": num_runs,
             "num_launched": num_launch,
             "stagger_max": stagger_max,
-            "input_mode": "images" if use_images else "pdf",
+            "input_mode": "visual" if force_visual else "pdf",
             "shuffled": shuffle,
             "num_pages": num_pages,
             "elapsed_seconds": round(elapsed, 1),
@@ -684,27 +674,21 @@ async def main():
         help="Max random delay in seconds before each run starts (default: 0)",
     )
     parser.add_argument(
-        "--images",
+        "--force-visual",
         action="store_true",
-        help="Pre-render PDF pages as images instead of sending native PDF",
+        help="Rasterize PDF (strip text layer, force visual-only recognition)",
     )
     parser.add_argument(
-        "--image-dpi",
+        "--visual-dpi",
         type=int,
         default=150,
-        help="DPI for image pre-rendering (default: 150)",
+        help="DPI for rasterization (default: 150)",
     )
     parser.add_argument(
-        "--image-quality",
+        "--visual-quality",
         type=int,
         default=70,
-        help="Image quality for pre-rendering (default: 70)",
-    )
-    parser.add_argument(
-        "--image-format",
-        choices=["webp", "jpeg"],
-        default="webp",
-        help="Image format for pre-rendering (default: webp, ~50%% smaller)",
+        help="JPEG quality for rasterization (default: 70)",
     )
 
     args = parser.parse_args()
@@ -718,10 +702,9 @@ async def main():
         shuffle=not args.no_shuffle,
         num_launch=args.launch,
         stagger_max=args.stagger,
-        use_images=args.images,
-        image_dpi=args.image_dpi,
-        image_quality=args.image_quality,
-        image_format=args.image_format,
+        force_visual=args.force_visual,
+        visual_dpi=args.visual_dpi,
+        visual_quality=args.visual_quality,
     )
 
 
