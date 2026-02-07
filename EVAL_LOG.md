@@ -110,6 +110,11 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 
 **Key takeaway:** Prompt engineering for presentation checks yielded +24pp recall improvement at no additional cost. The detailed sub-categories with concrete examples (direction words, restated labels, standard numbers) directly mapped to previously-missed error types.
 
+**Rank/dedupe bottleneck analysis (v2 run):**
+- inject_002 (SOCIE tie_break p150): **Not in raw findings.** 0/25 runs detected it. Genuine detection miss.
+- inject_015 (note_ref_wrong p150): **Not in raw findings.** 0/25 runs caught the off-by-one. Genuine detection miss.
+- inject_022 (Gross profit→Gross loss label p145): **IS in raw findings.** 7/25 runs explicitly flagged "gross loss" as wrong label. But rank/dedupe merged these into `pl_2019_math_and_tie_errors` (20 findings merged) and `pl_presentation_errors_headers_currency` (16 findings merged). The eval LLM matched these mega-findings to inject_004 (offset) and inject_016/018/019 (year/currency/classification) but couldn't decompose the merged blob to also credit inject_022. **Rank/dedupe is the bottleneck here** — over-aggressive merging of 20+ findings into a single entry lost the granularity needed for eval to match individual GT errors.
+
 ### 2026-02-07 — CONTROL: 1x Gemini 3 Pro, single pass, no shuffle (full PDF)
 
 - **Config**: 1x `gemini-3-pro-preview`, tool-call loop, no shuffle, no race
