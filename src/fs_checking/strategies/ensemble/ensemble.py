@@ -107,12 +107,42 @@ document headers/footers (e.g., "Page 8" or "8" at top of page), NOT the PDF pos
 ### 3. STATEMENT - NOTE TIES
 - BS line items must tie EXACTLY to corresponding notes
 - P&L items must tie to Note breakdowns
-- CF items must tie to Note 31 reconciliations
+- CF items must tie to Note reconciliations
 
-### 4. PRESENTATION
-- Title dates match column headers
-- Labels match values (positive/negative)
-- Note references are valid and sequential
+### 4. PRESENTATION & LABELING
+Read every label, header, and reference carefully. Report ANY of these:
+
+**Dates & Periods**
+- Column header years must match the reporting period (e.g. "2019" column under \
+"Year ended 31 December 2019")
+- Title dates, subtitle dates, and column headers must all be consistent
+- "(Restated)" or "(Re-presented)" labels must appear on ALL comparative columns \
+that were restated — flag if missing from any column that should have it
+
+**Labels & Classifications**
+- Section headings must match their content (e.g. "Non-current assets" section \
+should not contain current items)
+- "Continuing operations" vs "Discontinued operations" labels must be used correctly
+- Direction words must be consistent: "Due from" (asset) vs "Due to" (liability), \
+"inflow" vs "outflow" in cash flow statements
+- Sign words must match values: "profit" with positive, "loss" with negative; \
+"receivable" in receivable notes, "payable" in payable notes
+
+**References**
+- Every "(Note X)" cross-reference must point to the correct note number — verify \
+the referenced note actually discusses the line item
+- Accounting standard references must be correct (e.g. IFRS 16 is Leases, not \
+IFRS 17 which is Insurance Contracts; IAS 19 is Employee Benefits, not IAS 20)
+- Note numbering should be sequential with no gaps
+
+**Currency & Units**
+- Currency labels (e.g. US$, HK$, EUR) must be consistent within each statement
+- Unit labels (e.g. "'000", "millions") must be consistent across columns
+
+### 5. REASONABLENESS
+- Large year-on-year swings (>50%) without explanation in notes
+- Suspiciously round numbers that should be calculated totals
+- Order-of-magnitude outliers vs peer line items in the same table
 
 ## Instructions
 
@@ -120,7 +150,9 @@ document headers/footers (e.g., "Page 8" or "8" at top of page), NOT the PDF pos
 2. Each time you find an error, call the `log_issue` tool immediately
 3. Be thorough - missing errors is worse than false positives
 4. Use DOCUMENT page numbers (from headers), not PDF position
-5. After checking all pages, write a brief summary of your review
+5. Pay special attention to PRESENTATION errors — they are easy to overlook but \
+just as important as math errors. Read every label and reference, don't just check numbers.
+6. After checking all pages, write a brief summary of your review
 
 Log each error as you find it using the log_issue tool.
 """

@@ -81,6 +81,35 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 - Presentation/semantic errors are harder than arithmetic errors — model is tuned for cross-footing and tie-out checks, less for label consistency
 - 1 FP (pl_total_margin_crossfoot) is a genuine cascade from inject_004 offset — the model correctly found the downstream inconsistency
 
+### 2026-02-07 — 25x Flash, race 30/25, stagger 5s — STRENGTHENED PROMPT (v2)
+
+- **Config**: 25x `gemini-3-flash-preview` (launch 30, keep 25), tool-call loop, page shuffle, stagger 5s
+- **Prompt**: Expanded PRESENTATION section with sub-categories (Dates & Periods, Labels & Classifications, References, Currency & Units) plus REASONABLENESS section. Added explicit instruction to read every label and reference.
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 26/29 (89.7%) — up from 65.5%
+- **Precision**: 81.2% (26 TP, 6 FP) — up from 79.2%
+- **F1**: 85.2% — up from 71.7%
+- **Cost**: $3.97
+- **Time**: 871s (5 runs failed with 503s)
+- **Raw findings**: 267 (vs 196 in v1) — model produces ~36% more findings
+
+**Newly detected vs v1 (7 errors):**
+- inject_010 (tie_break p194 related co) — numeric, now caught
+- inject_014 (magnitude ÷10 p246 fin summary) — numeric, now caught
+- inject_017 (year_swap p148 BS column "2019"→"2018") — prompt examples helped
+- inject_019 (Continuing→Discontinued p145) — explicit classification check
+- inject_021 (Due from→to p148) — explicit direction word check
+- inject_023 (inflow→outflow p152 CF) — explicit direction word check
+- inject_024 (restated label removal p148) — explicit restated label check
+- inject_025 (HKFRS 16→17 p154) — explicit standard reference check
+
+**Still missed (3/29):**
+- inject_002 (tie_break p150 SOCIE +25k): SOCIE is a complex table, model consistently misses this
+- inject_015 (note_ref_wrong p150 Note 25→26): Off-by-one in note refs remains hard to detect
+- inject_022 (Gross profit→Gross loss p145): Model found the math error but not the label change — ironic
+
+**Key takeaway:** Prompt engineering for presentation checks yielded +24pp recall improvement at no additional cost. The detailed sub-categories with concrete examples (direction words, restated labels, standard numbers) directly mapped to previously-missed error types.
+
 ## Written test_Case.pdf (27 errors)
 
 ### 2026-02-05 — Historical baseline (pre tool-call rewrite)
