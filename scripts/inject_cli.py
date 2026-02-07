@@ -4,9 +4,10 @@ Inject known errors into financial statement PDFs for systematic
 evaluation of the detection system.
 
 Commands:
-    fs-inject list   PDF    — Show all numeric spans (exploration)
-    fs-inject random PDF    — Inject N random errors
-    fs-inject batch  PDF    — Generate M variants with N errors each
+    fs-inject list       PDF  — Show all numeric spans (exploration)
+    fs-inject list-text  PDF  — Show all text mutation targets
+    fs-inject random     PDF  — Inject N random errors (numeric + text)
+    fs-inject batch      PDF  — Generate M variants with N errors each
 """
 
 import json
@@ -15,18 +16,38 @@ import click
 from pathlib import Path
 
 
+# All supported mutation types
+_ALL_TYPES = [
+    # Numeric
+    "magnitude",
+    "offset",
+    "transposition",
+    "sign_flip",
+    "tie_break",
+    # Text
+    "note_ref_wrong",
+    "year_swap",
+    "currency_swap",
+    "standard_ref_wrong",
+    "label_swap_direction",
+    "label_swap_classification",
+    "label_swap_sign_word",
+    "restated_label",
+]
+
+
 @click.group()
 def main():
     """Inject errors into financial statement PDFs for evaluation."""
     pass
 
 
-@main.command()
+@main.command("list")
 @click.argument("pdf_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--min-value", type=int, default=100, help="Minimum absolute value to include"
 )
-def list(pdf_file: Path, min_value: int):
+def list_numeric(pdf_file: Path, min_value: int):
     """List all numeric spans in a PDF.
 
     Shows every extractable number with its page, position, and value.
@@ -36,6 +57,45 @@ def list(pdf_file: Path, min_value: int):
 
     pdf_bytes = pdf_file.read_bytes()
     output = list_spans(pdf_bytes)
+    click.echo(output)
+
+
+@main.command("list-text")
+@click.argument("pdf_file", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--kinds",
+    "-k",
+    multiple=True,
+    type=click.Choice(
+        [
+            "note_ref_wrong",
+            "year_swap",
+            "currency_swap",
+            "standard_ref_wrong",
+            "label_swap_direction",
+            "label_swap_classification",
+            "label_swap_sign_word",
+            "restated_label",
+        ],
+        case_sensitive=False,
+    ),
+    help="Text mutation kinds to show (default: all)",
+)
+def list_text(pdf_file: Path, kinds: tuple[str, ...]):
+    """List all text mutation targets in a PDF.
+
+    Shows eligible text spans for each mutation type with their replacements.
+    Useful for understanding what text-level doping is available.
+
+    Example:
+        fs-inject list-text report.pdf
+        fs-inject list-text report.pdf -k note_ref_wrong -k year_swap
+    """
+    from fs_checking.error_inject import list_text_spans
+
+    pdf_bytes = pdf_file.read_bytes()
+    kinds_set = set(kinds) if kinds else None
+    output = list_text_spans(pdf_bytes, kinds=kinds_set)
     click.echo(output)
 
 
@@ -55,14 +115,16 @@ def list(pdf_file: Path, min_value: int):
     "--types",
     "-t",
     multiple=True,
-    type=click.Choice(
-        ["magnitude", "offset", "transposition", "sign_flip", "tie_break"],
-        case_sensitive=False,
-    ),
-    help="Error types to use (default: all)",
+    type=click.Choice(_ALL_TYPES, case_sensitive=False),
+    help="Error types to use (default: all numeric types)",
 )
 @click.option(
     "--min-value", type=int, default=1000, help="Minimum value of numbers to target"
+)
+@click.option(
+    "--visual-check/--no-visual-check",
+    default=False,
+    help="Run visual uniformity check on doped pages using Gemini Flash",
 )
 def random(
     pdf_file: Path,
@@ -71,16 +133,23 @@ def random(
     output: Path | None,
     types: tuple[str, ...],
     min_value: int,
+    visual_check: bool,
 ):
     """Inject N random errors into a PDF.
+
+    Supports both numeric and text-level mutations. When text mutation types
+    are included (e.g. -t note_ref_wrong -t year_swap), the tool allocates
+    a mix of numeric and text mutations proportionally.
 
     Produces a mutated PDF and a ground truth JSON manifest.
 
     Example:
         fs-inject random report.pdf -n 10 -s 42
         fs-inject random report.pdf -n 3 -t tie_break -t offset
+        fs-inject random report.pdf -n 8 -t tie_break -t note_ref_wrong -t year_swap
+        fs-inject random report.pdf -n 5 -t note_ref_wrong --visual-check
     """
-    from fs_checking.error_inject import random_inject
+    from fs_checking.error_inject import random_inject, visual_uniformity_check
 
     pdf_bytes = pdf_file.read_bytes()
     error_types = list(types) if types else None
@@ -109,6 +178,15 @@ def random(
     for item in result.ground_truth:
         click.echo(f"  [{item.id}] p{item.page}: {item.description}")
 
+    # Visual uniformity check
+    if visual_check:
+        click.echo()
+        click.echo("Running visual uniformity check...")
+        assessment = visual_uniformity_check(result)
+        click.echo()
+        click.echo("=== Visual Uniformity Check ===")
+        click.echo(assessment)
+
 
 @main.command()
 @click.argument("pdf_file", type=click.Path(exists=True, path_type=Path))
@@ -126,6 +204,13 @@ def random(
 @click.option(
     "--min-value", type=int, default=1000, help="Minimum value of numbers to target"
 )
+@click.option(
+    "--types",
+    "-t",
+    multiple=True,
+    type=click.Choice(_ALL_TYPES, case_sensitive=False),
+    help="Error types to use (default: all numeric types)",
+)
 def batch(
     pdf_file: Path,
     variants: int,
@@ -133,6 +218,7 @@ def batch(
     base_seed: int,
     output_dir: Path | None,
     min_value: int,
+    types: tuple[str, ...],
 ):
     """Generate M variant PDFs, each with N injected errors.
 
@@ -142,10 +228,12 @@ def batch(
     Example:
         fs-inject batch report.pdf -m 20 -n 5
         fs-inject batch report.pdf -m 10 -n 3 -o test_variants/
+        fs-inject batch report.pdf -m 10 -n 8 -t tie_break -t note_ref_wrong
     """
     from fs_checking.error_inject import random_inject
 
     pdf_bytes = pdf_file.read_bytes()
+    error_types = list(types) if types else None
 
     if output_dir is None:
         output_dir = pdf_file.parent / f"{pdf_file.stem}_injected"
@@ -159,6 +247,7 @@ def batch(
             pdf_bytes,
             n_errors=n_errors,
             seed=seed,
+            error_types=error_types,
             source_document=pdf_file.name,
             min_value=min_value,
         )
