@@ -163,6 +163,23 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 
 **Key takeaway:** Visual-only mode confirms the doping is clean — no textual artefacts giving the model unfair hints. The 81% recall from pure pixel recognition is a genuine lower bound. The 3 errors caught in native PDF (v3: 100%) but missed visually (inject_017, inject_021, inject_024) are fine-print items where the embedded text layer gives an advantage. The doping technique (font ref reuse, background color matching) produces visually indistinguishable mutations.
 
+### 2026-02-08 — 25x Flash, race 30/25, visual FS-only 150dpi (110 pages)
+
+- **Config**: 25x `gemini-3-flash-preview` (launch 30, keep 25), tool-call loop, page shuffle, stagger 5s. Input: FS pages only (p143-252, 110 pages), rasterized 150dpi q70, 14.8 MB.
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 26/29 (83.9%)
+- **Precision**: 81.2% (26 TP, 6 FP)
+- **F1**: 82.5%
+- **Cost**: $3.67
+- **Time**: 435s
+- **Raw findings**: 315 (39 from partial harvest)
+
+**Detected (26/29):** Same 26 as 100dpi full-doc visual run, PLUS inject_002 (SOCIE tie-break) and inject_024 (restated label removal) — both caught thanks to 150dpi sharpness. Lost inject_022 (Gross profit→loss label) which 100dpi had caught.
+
+**Missed (5/29):** inject_014 (magnitude ÷10 p246 — outside FS pages), inject_015 (note ref off-by-one), inject_017 (year swap column header), inject_021 (Due from→to), inject_022 (Gross profit→loss label — math caught but not label)
+
+**Key takeaway:** 150dpi on 110 FS pages is the best visual-only config: higher recall than 100dpi full-doc (83.9% vs 81.2%), faster (435s vs 685s), cheaper ($3.67 vs $4.80). inject_014 is missed because p246 (financial summary) is outside the FS page range. The 4 remaining misses are genuinely subtle presentation errors.
+
 ### 2026-02-07 — CONTROL: 1x Gemini 3 Pro, single pass, no shuffle (full PDF)
 
 - **Config**: 1x `gemini-3-pro-preview`, tool-call loop, no shuffle, no race
