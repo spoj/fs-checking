@@ -158,21 +158,23 @@ Log each error as you find it using the log_issue tool.
 """
 
 RANK_DEDUPE_PROMPT = """\
-You are organizing error findings from a financial statement review.
+Deduplicate and rank the following {num_candidates} error findings from a financial \
+statement review. Use the check categories below to judge severity — anything that \
+falls under these categories is at least MEDIUM, not LOW.
 
-## Candidates ({num_candidates} findings)
+{detect_prompt}
+
+## Candidates
 
 {candidates_json}
 
-## Task
+## Instructions
 
-1. DEDUPLICATE: Merge findings that describe the same underlying error
-2. RANK by priority:
-   - HIGH: Material misstatements, math errors affecting totals, broken ties between statements
-   - MEDIUM: Minor calculation errors, presentation issues with numbers
-   - LOW: Formatting, labeling, cosmetic issues
-
-Do NOT validate whether errors are real - assume they are. Just organize them.
+1. DEDUPLICATE: Merge findings about the exact same error. Keep DIFFERENT errors on \
+the same page as separate entries (e.g. a math error and a label error on the same \
+line are two distinct issues).
+2. RANK as HIGH / MEDIUM / LOW based on the check categories above.
+3. Do NOT validate whether errors are real — assume they are. Just organize them.
 
 Return JSON only:
 ```json
@@ -352,6 +354,7 @@ async def _rank_and_dedupe(
 
     prompt = RANK_DEDUPE_PROMPT.format(
         num_candidates=len(candidates),
+        detect_prompt=DETECT_PROMPT,
         candidates_json=json.dumps(candidates_for_prompt, indent=2),
     )
 
