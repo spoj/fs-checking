@@ -110,6 +110,29 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 
 **Key takeaway:** Prompt engineering for presentation checks yielded +24pp recall improvement at no additional cost. The detailed sub-categories with concrete examples (direction words, restated labels, standard numbers) directly mapped to previously-missed error types.
 
+### 2026-02-07 — 25x Flash, race 30/25, stagger 5s — ALIGNED RANKER + PARTIAL HARVEST (v3)
+
+- **Config**: 25x `gemini-3-flash-preview` (launch 30, keep 25), tool-call loop, page shuffle, stagger 5s
+- **Prompt**: Same strengthened detection prompt as v2. Ranker now embeds detection prompt directly (single source of truth). Ranker instructed to keep different errors on same page as separate entries.
+- **Code changes**: Partial findings harvested from cancelled race runners. JSON decode errors (503 HTML) now retried instead of fatal.
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 29/29 (100%) — up from 89.7%
+- **Precision**: 65.4% (34 TP, 18 FP) — down from 81.2%
+- **F1**: 79.1% — down from 85.2%
+- **Cost**: $4.40
+- **Time**: 1014s
+- **Raw findings**: 300 (47 harvested from 5 cancelled runners)
+- **Unique after dedupe**: 52 (H:30 M:19 L:3)
+
+**All 29 GT errors detected.** The 3 previously-missed errors:
+- inject_002 (SOCIE tie_break p150): Now caught as `perpetual_securities_rollforward`
+- inject_015 (note_ref_wrong p150): Now caught as `soce_note_header`
+- inject_022 (Gross profit→loss p145): Now caught as `pl_gloss_loss_label` — ranker kept label error separate from math error
+
+**18 FP** — many appear to be real errors in the base document (PPE rollforward, pension OCI tie, lease discrepancies). The ranker is less aggressive about merging, which helps recall but increases FP count.
+
+**Key takeaway:** 100% recall achieved through three reinforcing changes: (1) aligned ranker prompt keeps presentation findings as HIGH instead of LOW, (2) partial harvest recovers findings from cancelled runners, (3) less aggressive merging preserves distinct error types on same page.
+
 **Rank/dedupe bottleneck analysis (v2 run):**
 - inject_002 (SOCIE tie_break p150): **Not in raw findings.** 0/25 runs detected it. Genuine detection miss.
 - inject_015 (note_ref_wrong p150): **Not in raw findings.** 0/25 runs caught the off-by-one. Genuine detection miss.

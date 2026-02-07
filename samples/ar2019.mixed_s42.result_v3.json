@@ -1,0 +1,3141 @@
+{
+  "metadata": {
+    "strategy": "ensemble-flash-pro-rankdedupe",
+    "detect_model": "google/gemini-3-flash-preview",
+    "rank_model": "google/gemini-3-pro-preview",
+    "num_runs": 25,
+    "num_launched": 30,
+    "stagger_max": 5.0,
+    "mode": "pdf_shuffled",
+    "num_pages": 252,
+    "elapsed_seconds": 1013.9,
+    "cost_usd": 4.4022
+  },
+  "high": [
+    {
+      "id": "pl_turnover_audit",
+      "page": 143,
+      "description": "Turnover on the Consolidated Profit and Loss Account (11,601,937 US$'000) does not tie to Note 3 Segment Information (11,413,312 US$'000). The Note 3 figure ties to other summaries.",
+      "merged_from": [
+        "turnover_pl_segment_note_mismatch_2019",
+        "turnover_note_tie_error_2019",
+        "turnover_tie_erroripp",
+        "pl_turnover_note_tie_mismatch",
+        "pl_face_turnover_mismatch_and_unit_error",
+        "pl_turnover_note_mismatch",
+        "pl_turnover_value_error",
+        "pl_turnover_note_tie_failure",
+        "pl_turnover_value_mismatch_2019"
+      ]
+    },
+    {
+      "id": "pl_gross_profit_crossfoot",
+      "page": 143,
+      "description": "Gross Profit (labeled Gross loss) of 1,241,591 on the P&L does not equal Turnover (11,601,937) minus Cost of Sales (10,221,721), which is 1,380,216. Even utilizing the correct turnover from notes (11,413,312), the Gross Profit should be 1,191,591.",
+      "merged_from": [
+        "pl_gross_profit_calc_error_2019",
+        "pl_gross_profit_math_error",
+        "pl_gp_math_error",
+        "pl_cross_footing_gp_mismatch",
+        "pl_gp_calc_error",
+        "pl_gross_profit_math_error_2019",
+        "pl_gross_profit_logic_error",
+        "pnl_gp_crossfoot_error_2019",
+        "pl_gp_mismatch_2019"
+      ]
+    },
+    {
+      "id": "pl_total_margin_crossfoot",
+      "page": 143,
+      "description": "Total Margin (1,219,336) on the P&L does not equal the sum of Gross Profit/Loss (reported as 1,241,591) and Other Income (27,745), which sum to 1,269,336.",
+      "merged_from": [
+        "pl_total_margin_calc_error_2019",
+        "pl_total_margin_math_error",
+        "pl_total_margin_crossfoot_error_2019",
+        "total_margin_sum_error_pl"
+      ]
+    },
+    {
+      "id": "pl_cop_math_error",
+      "page": 143,
+      "description": "Core Operating Profit on the P&L (227,547) does not sum from its reported components. Gross Profit (1,241,591) + Other Income (27,745) - Selling Exp (384,973) - Admin Exp (606,816) = 277,547. The difference is 50,000.",
+      "merged_from": [
+        "pl_cop_sum_erroripp_math"
+      ]
+    },
+    {
+      "id": "bs_intangible_assets_tie",
+      "page": 146,
+      "description": "Intangible Assets on Balance Sheet (2,373,252) do not tie to Note 11 (2,298,948). The Balance Sheet non-current assets subtotal calculation relies on the Note 11 figure, identifying the face amount as a typo.",
+      "merged_from": [
+        "intangible_assets_note_tie_mismatch",
+        "bs_intangibles_note_tie_error_2019",
+        "bs_intangible_assets_tie_error_2019",
+        "bs_note11_tie_err_2019",
+        "intangible_assets_bs_note_tie_error",
+        "intangible_assets_balance_mismatch",
+        "bs_intangibles_note_mismatch",
+        "intangible_assets_tie_error",
+        "intangible_assets_note_tie_mismatch_2019"
+      ]
+    },
+    {
+      "id": "bs_non_current_assets_footing",
+      "page": 146,
+      "description": "Non-current assets subtotal (2,940,021) does not equal the sum of the reported line items (3,014,325). The discrepancy matches the Intangible Assets line item error.",
+      "merged_from": [
+        "bs_non_current_assets_mismatch_2019",
+        "non_current_assets_total_error_bs",
+        "nca_subtotal_calculation_mismatch_2019",
+        "bs_noncurrent_assets_subtotal_error_2019"
+      ]
+    },
+    {
+      "id": "bs_reserves_tie_and_footing",
+      "page": 147,
+      "description": "Reserves on BS (1,170,520) do not tie to SOCE (1,250,520). Consequently, the Shareholders' Funds subtotal (1,264,206) does not equal the sum of Share Capital (13,686) and the reported Reserves (1,170,520).",
+      "merged_from": [
+        "bs_reserves_mismatch_crossfoot",
+        "bs_reserves_cross_footing_2019",
+        "bs_equity_cross_footing_error_2019",
+        "shareholders_funds_cross_foot_error_bs_2019",
+        "equity_subtotal_calculation_mismatch_2019",
+        "bs_shareholders_funds_calc_error_2019",
+        "bs_reserves_cross_footing_error",
+        "bs_reserves_sum_mismatch_2019",
+        "bs_reserves_crossfoot_error_2019",
+        "bs_reserves_crossfoot_err_2019",
+        "bs_reserves_tie_error_2019",
+        "bs_reserves_tie_in_error",
+        "consolidated_reserves_typo_2019",
+        "bs_reserves_sce_mismatch",
+        "bs_reserves_mismatch",
+        "bs_reserves_cross_foot_error",
+        "bs_reserves_cross_foot_error_2019"
+      ]
+    },
+    {
+      "id": "cfs_operations_note_tie",
+      "page": 150,
+      "description": "Net cash generated from operations on CFS face (327,617) does not tie to Note 31(a) (317,102).",
+      "merged_from": [
+        "cfs_generated_cash_mismatch_2019",
+        "cf_operating_note_tie_mismatch",
+        "cf_net_op_cash_note_tie_2019",
+        "cf_note31a_tie_err_2019",
+        "cash_flow_note_tie_error_ops_cash",
+        "cf_ops_cash_note_tie_error",
+        "cf_ops_tie_error",
+        "cfs_cash_from_ops_tie_error_2019",
+        "cf_net_cash_gen_ops_mismatch",
+        "cash_flow_operations_note_tie_mismatch",
+        "cash_flow_operating_tie_in_error",
+        "cf_op_cash_face_vs_note_mismatch",
+        "cash_flow_reconciliation_note_tie_error_2019",
+        "cash_flow_reconciliation_tie_mismatch"
+      ]
+    },
+    {
+      "id": "cfs_operations_subtotal_footing",
+      "page": 150,
+      "description": "Net cash flow from operating activities (280,854) does not equal the sum of its reported components: Generated (327,617) - Tax (1,129 + 35,119) = 291,369. The subtotal is correct based on Note 31(a) values.",
+      "merged_from": [
+        "cash_flow_operating_subtotal_mismatch",
+        "cf_ops_net_crossfoot_mismatch",
+        "cf_operating_activities_subtotal_error_2019",
+        "net_op_cash_outflow_error_cf_2019",
+        "cf_operating_cash_mismatch",
+        "cf_op_subtotal_cross_footing",
+        "cf_ops_cash_footing_error",
+        "cash_flow_net_operating_math_error"
+      ]
+    },
+    {
+      "id": "cfs_opening_balance_mismatch",
+      "page": 151,
+      "description": "Continuing Operations Cash at 1 Jan 2019 (612,931) does not tie to the prior year closing balance (612,391) and causes the rollforward breakdown to not footing to the total.",
+      "merged_from": [
+        "cash_flow_opening_balance_split_error",
+        "cash_rollforward_opening_balance_typo",
+        "opening_cash_flow_balance_mismatch_2019",
+        "cf_opening_cash_mismatch_cross_footing_subtable"
+      ]
+    },
+    {
+      "id": "cfs_investing_extraneous",
+      "page": 150,
+      "description": "Cash Flow Investing Activities includes 'Proceeds from disposal of an associated company' (6,992) for 2019, which contradicts Note 15 (disposal was in 2018).",
+      "merged_from": [
+        "cf_investing_extraneous_item"
+      ]
+    },
+    {
+      "id": "note_3_scs_turnover_error",
+      "page": 177,
+      "description": "Supply Chain Solutions turnover in Note 3 supplementary analysis is reported as 88,344,820 (HK$), which is a typo for 8,834,482 (US$). The reported total of 9,999,701 requires the corrected US$ amount.",
+      "merged_from": [
+        "scs_turnover_extra_digit_typo",
+        "note_3_scs_turnover_cross_foot_2019",
+        "segment_supplementary_turnover_cross_foot_2019",
+        "note_3_turnover_value_typo",
+        "segment_turnover_unit_and_value_error",
+        "note_3_scs_turnover_typo"
+      ]
+    },
+    {
+      "id": "note_3_logistics_tie",
+      "page": 177,
+      "description": "Logistics Services turnover in Note 3 (1,173,277) does not tie to the external customer turnover table (1,152,363) or the P&L face value breakdown.",
+      "merged_from": [
+        "note3_logistics_note_tie_2019"
+      ]
+    },
+    {
+      "id": "note_8_dividend_math",
+      "page": 181,
+      "description": "Total Dividends 2019 (10,962) does not equal sum of components (Interim 15,962 + Final 0). 15,962 is incorrect per SOCE.",
+      "merged_from": [
+        "div_note_subtotal_mismatch",
+        "dividend_total_crossfoot_error_2019",
+        "note_8_component_typo_2019",
+        "dividend_note_math_error_2019",
+        "note_div_crossfoot_2019",
+        "note_8_total_math_error",
+        "dividend_note_crossfoot_error_2019"
+      ]
+    },
+    {
+      "id": "note_8_dividend_soce_tie",
+      "page": 181,
+      "description": "Interim dividend amount in Note 8 (15,962) does not tie to the SOCE and Directors Report (10,962).",
+      "merged_from": [
+        "interim_dividend_statement_tie_mismatch",
+        "note_8_interim_dividend_mismatch",
+        "note_8_interim_div_mismatch",
+        "dividend_note_8_amount_discrepancy"
+      ]
+    },
+    {
+      "id": "note_19_related_party_aging_footing",
+      "page": 192,
+      "description": "Ageing of trade amounts due from related companies sum to 545,669, not the reported total of 539,876.",
+      "merged_from": [
+        "note_19_ageing_crossfoot_2019",
+        "related_parties_aging_math_mismatch",
+        "related_party_ageing_cross_foot_error",
+        "related_party_receivable_aging_mismatch_2019",
+        "note_19_ageing_cross_footing",
+        "note_19_ageing_cross_footing_error"
+      ]
+    },
+    {
+      "id": "note_28_maturity_footing",
+      "page": 204,
+      "description": "Long-term liabilities 'Wholly repayable within 5 years' subtotal (1,538,851) does not equal sum of components (1,563,851).",
+      "merged_from": [
+        "long_term_liabilities_maturity_subtotal_mismatch",
+        "note_28_maturity_subtotal_mismatch_2019",
+        "lt_liabilities_maturity_math_mismatch",
+        "lt_liabilities_maturity_math_error",
+        "note_28_maturity_sum_error",
+        "note_28_maturity_cross_footing",
+        "note28_maturity_subtotal_calculation_error",
+        "note_28_maturity_subtotal_error_2019",
+        "maturity_schedule_footing_2019"
+      ]
+    },
+    {
+      "id": "note_30_deferred_tax_rollforward",
+      "page": 209,
+      "description": "Deferred tax summary rollforward opening balance (13,591) does not tie to detailed opening balances (13,951 net asset). Rollforward mathematics for the year also fail using the reported Opening and Closing figures.",
+      "merged_from": [
+        "deferred_tax_summary_rollforward_error",
+        "def_tax_opening_mismatch_bs",
+        "def_tax_opening_rollforward_mismatch",
+        "deferred_tax_net_rollforward_errors",
+        "deferred_tax_rollforward_opening_error_2019",
+        "note_30_opening_balance_tie_error_2019",
+        "deferred_tax_opening_mismatch",
+        "deferred_tax_recon_math_error_2019_k_variance_360"
+      ]
+    },
+    {
+      "id": "note_30_hedging_tie",
+      "page": 209,
+      "description": "Deferred tax summary hedging reserve movement (-1,007) does not tie to detailed liability table movement (1,198 charge).",
+      "merged_from": [
+        "deferred_tax_summary_tie_error"
+      ]
+    },
+    {
+      "id": "note_31a_recon_footing",
+      "page": 211,
+      "description": "Note 31(a) operating profit before working capital changes subtotal (417,535) does not equal sum of listed components (407,535).",
+      "merged_from": [
+        "cf_rec_subtotal_mismatch",
+        "note_31a_subtotal_calc_error_2019",
+        "note31a_subtotal_crossfoot_2019"
+      ]
+    },
+    {
+      "id": "note_31a_missing_item",
+      "page": 211,
+      "description": "Note 31(a) missing non-cash adjustment for impairment of trade receivables (14,135) which is required to reconcile operating profit to cash flow.",
+      "merged_from": [
+        "cash_flow_recon_missing_impairment_adjustment_2019"
+      ]
+    },
+    {
+      "id": "note_37_lease_tie",
+      "page": 218,
+      "description": "Note 37 Related Party Transactions shows lease rental of 5,300,000, which mismatches the Directors Report stating 23,303,000.",
+      "merged_from": [
+        "note_37_lease_amount_mismatch_directors_report"
+      ]
+    },
+    {
+      "id": "note_38_gbg_aging_tie",
+      "page": 223,
+      "description": "Note 38(b) claims GBG overdue amounts (e.g. 147,909 91-180 days) that exceed the total related party overdue amounts in Note 19 (147,946 total, but 141,363 vs 141,393 for >180 days is also inconsistent).",
+      "merged_from": [
+        "gbg_ageing_bucket_inconsistency",
+        "gb_receivables_overdue_mismatch_91_180",
+        "gb_receivables_overdue_mismatch_181_365",
+        "note_38_gbg_aging_tie"
+      ]
+    },
+    {
+      "id": "bs_2018_current_liab_footing",
+      "page": 146,
+      "description": "2018 Restated Current Liabilities total (2,794,024) does not equal sum of components (2,798,560).",
+      "merged_from": [
+        "bs_2018_cl_cross_footing_error"
+      ]
+    },
+    {
+      "id": "soce_capital_reserve_missing",
+      "page": 148,
+      "description": "SOCE row 'Transfer to capital reserve' missing debit entry of (577) in Retained Earnings column.",
+      "merged_from": [
+        "socie_missing_transfer_value_re",
+        "soce_capital_reserve_missing"
+      ]
+    },
+    {
+      "id": "plan_assets_footing",
+      "page": 207,
+      "description": "Plan assets detailed components for 2018 sum to 22,823, mismatching the total of 23,833.",
+      "merged_from": [
+        "plan_assets_2018_math_error",
+        "plan_assets_footing"
+      ]
+    },
+    {
+      "id": "ppe_rollforward_errors",
+      "page": 188,
+      "description": "PPE Rollforwards for 2018 Plant/Machinery and 2019 Motor Vehicles do not equal the closing balances based on the opening plus movements provided.",
+      "merged_from": [
+        "ppe_rollforward_plant_mismatch_2018",
+        "ppe_motor_rollforward_error_2019_note12",
+        "ppe_total_rollforward_error_2019_note12"
+      ]
+    },
+    {
+      "id": "perpetual_securities_rollforward",
+      "page": 147,
+      "description": "Perpetual securities opening balance stated as 680,804 in one instance versus closing 655,687 in prior period.",
+      "merged_from": [
+        "perpetual_securities_opening_mismatch"
+      ]
+    },
+    {
+      "id": "pension_oci_note_tie",
+      "page": 239,
+      "description": "Pension remeasurement gain in Note 29(v) does not tie to the OCI statement/Note 26.",
+      "merged_from": [
+        "pension_remeasurement_oci_tie_error"
+      ]
+    },
+    {
+      "id": "10_year_summary_turnover_2017",
+      "page": 244,
+      "description": "Ten-Year Summary 2017 turnover 1,353,420 is unreasonable (order of magnitude error) compared to trends and operating profit.",
+      "merged_from": [
+        "summary_ten_year_turnover_2017_unreasonable"
+      ]
+    }
+  ],
+  "medium": [
+    {
+      "id": "pl_dates",
+      "page": 143,
+      "description": "P&L Title incorrectly states 'Year ended 31 December 2018' instead of 2019.",
+      "merged_from": [
+        "pl_wrong_year_title",
+        "pl_statement_period_mismatch",
+        "pl_incorrect_title_date",
+        "pl_title_year_incorrect",
+        "pl_title_year_incorrect",
+        "pl_header_year_error",
+        "pl_header_date_error_2019",
+        "pl_header_year_mismatch",
+        "pl_statement_title_date_error"
+      ]
+    },
+    {
+      "id": "pl_currency_header",
+      "page": 143,
+      "description": "P&L 2019 column header states 'HK$000' but figures are in 'US$000'.",
+      "merged_from": [
+        "pl_header_currency_mismatch_2019",
+        "pl_currency_label_error_2019",
+        "pl_unit_label_mismatch_2019",
+        "pl_unit_header_typo_hkd",
+        "pl_currency_label_error",
+        "pl_statement_header_currency_error",
+        "pl_unit_label_error",
+        "pl_unit_label_error_2019",
+        "pl_2019_hks_label_error"
+      ]
+    },
+    {
+      "id": "pl_section_labels",
+      "page": 143,
+      "description": "P&L top section labeled 'Discontinued Operations' instead of 'Continuing Operations'.",
+      "merged_from": [
+        "pl_incorrect_section_label_continuing_vs_discontinued",
+        "pl_section_heading_error_cont_ops",
+        "pl_section_header_label_error_2019",
+        "pl_section_label_error",
+        "pl_continuing_labeled_discontinued",
+        "pl_wrong_section_header",
+        "pl_statement_section_label_error",
+        "pl_heading_typo_total_operations_2019",
+        "pl_continuing_header_mislabel"
+      ]
+    },
+    {
+      "id": "pl_gloss_loss_label",
+      "page": 143,
+      "description": "Gross Profit labeled as 'Gross loss' despite being positive.",
+      "merged_from": [
+        "pl_gross_loss_label_error",
+        "pl_gross_loss_label_misstatement",
+        "pl_gross_loss_label_incorrect",
+        "pl_gross_loss_label_error_sign",
+        "pl_gross_loss_label_error_2019",
+        "pl_statement_gp_label_error_sign"
+      ]
+    },
+    {
+      "id": "bs_header_dates",
+      "page": 146,
+      "description": "Balance Sheet column headers labeled 2018 for 2019 data.",
+      "merged_from": [
+        "bs_header_date_error_2019",
+        "bs_column_header_year_error",
+        "bs_2019_header_year_error"
+      ]
+    },
+    {
+      "id": "bs_asset_heading",
+      "page": 146,
+      "description": "Non-current assets section incorrectly headed 'Non-current liabilities'.",
+      "merged_from": [
+        "bs_wrong_section_header",
+        "bs_assets_heading_error",
+        "bs_assets_header_label_error_2019",
+        "bs_nc_assets_header_label_error",
+        "bs_nc_header_label_error",
+        "bs_non_current_assets_header_mislabel"
+      ]
+    },
+    {
+      "id": "cfs_outflow_label",
+      "page": 150,
+      "description": "Cash Flow Statement uses 'Net cash outflow' label for positive operating cash inflows.",
+      "merged_from": [
+        "cfs_inflow_outflow_label_error",
+        "cf_label_op_outflow_incorrect",
+        "cf_op_cash_label_error_2019",
+        "cash_flow_operating_direction_label_error"
+      ]
+    },
+    {
+      "id": "auditor_remuneration_sign",
+      "page": 180,
+      "description": "Auditor remuneration total shown in brackets (negative) while components are positive.",
+      "merged_from": [
+        "auditor_remuneration_sign_presentation",
+        "auditor_remuneration_sign_inconsistency",
+        "auditor_remuneration_sign_inconsistency_2019",
+        "auditor_remuneration_sign_error",
+        "note_4_auditor_remun_parentheses"
+      ]
+    },
+    {
+      "id": "cash_parentheses",
+      "page": 195,
+      "description": "Positive cash balance in Note 22 shown in parentheses.",
+      "merged_from": [
+        "cash_balance_note_sign_error",
+        "cash_note_parentheses_error",
+        "note22_sign_err_2019",
+        "note_22_cash_signage_error_2019",
+        "cash_note_sign_error_2019"
+      ]
+    },
+    {
+      "id": "hkfrs_17_typo",
+      "page": 152,
+      "description": "HKFRS 16 Leases incorrectly labeled as HKFRS 17.",
+      "merged_from": [
+        "wrong_accounting_standard_reference_leases",
+        "mislabeling_accounting_standards_note_1_1_a",
+        "leases_standard_reference_error",
+        "accounting_std_typo_note_1_1",
+        "note_1_ifrs_numbering_error",
+        "note_1_hkfrs_reference_error_leases"
+      ]
+    },
+    {
+      "id": "note_3_currency_header",
+      "page": 177,
+      "description": "Note 3 Supplementary table labeled 'HK$000' but contains US$ figures.",
+      "merged_from": [
+        "segment_turnover_unit_mismatch_2019",
+        "note_3_currency_label_error",
+        "segment_supplementary_unit_error_2019",
+        "note_3_currency_label_error",
+        "note3_unit_label_err_2019"
+      ]
+    },
+    {
+      "id": "note_1_table_date",
+      "page": 154,
+      "description": "Note 1.1(A) table dated 'As at 1 January 2019' contains 2018 opening balance data.",
+      "merged_from": [
+        "note_1_date_header_error",
+        "restatement_table_header_date_error_1jan2019",
+        "note_1_header_date_error_restated_bal",
+        "ifrs16_table_date_error_2019",
+        "note_impact_table_header_typo",
+        "note1_table_date_error_2019",
+        "note_1_adoption_table_date_error"
+      ]
+    },
+    {
+      "id": "bs_2018_restated_missing",
+      "page": 146,
+      "description": "Balance Sheet 2018 comparative column missing '(Restated)' label.",
+      "merged_from": [
+        "bs_2018_restated_label_missing"
+      ]
+    },
+    {
+      "id": "graphic_labels_swapped",
+      "page": 236,
+      "description": "Infographic labels for USA and Europe turnover share swapped.",
+      "merged_from": [
+        "pie_chart_labels_swapped_summary",
+        "sum_infographic_labels_swapped_2019",
+        "graphic_labels_swapped"
+      ]
+    },
+    {
+      "id": "note_21_title",
+      "page": 192,
+      "description": "Note 21 top table titled 'Payables' but contains Receivables data.",
+      "merged_from": [
+        "note_21_title_label_error"
+      ]
+    },
+    {
+      "id": "ten_year_summary_labels",
+      "page": 245,
+      "description": "Ten Year Summary: 'Reserves' row likely includes NCI (based on value) and 'Shareholders' Funds' row displays Total Equity value.",
+      "merged_from": [
+        "ten_year_summary_reserves_classification_error",
+        "ten_year_summary_row_label_error"
+      ]
+    },
+    {
+      "id": "bs_asset_due_to_label",
+      "page": 150,
+      "description": "Current Asset line item labeled 'Due to related companies' instead of 'Due from'.",
+      "merged_from": [
+        "bs_curr_assets_label_err"
+      ]
+    },
+    {
+      "id": "bs_missing_note_ref",
+      "page": 180,
+      "description": "Reserves line on Balance Sheet missing reference to Note 26.",
+      "merged_from": [
+        "bs_missing_note_ref_reserves"
+      ]
+    },
+    {
+      "id": "soce_note_header",
+      "page": 148,
+      "description": "SOCE column headers reference Note 26 for Share Capital/Premium instead of Note 25.",
+      "merged_from": [
+        "soce_note_reference_error"
+      ]
+    }
+  ],
+  "low": [
+    {
+      "id": "eps_div_fx_consistency",
+      "page": 203,
+      "description": "Foreign exchange rate implied for EPS calculation differs from Dividend calculation in summary data.",
+      "merged_from": [
+        "eps_div_fx_rate_inconsistency_summary"
+      ]
+    },
+    {
+      "id": "committee_attendance_calc",
+      "page": 1,
+      "description": "Risk Management Committee attendance calculation includes non-member, inconsistent with other columns.",
+      "merged_from": [
+        "committee_meetings_attendance_average_inconsistency"
+      ]
+    },
+    {
+      "id": "total_margin_text_typo",
+      "page": 15,
+      "description": "Text states SCS accounted for 14% of margin, charts/data show 44%. Typo in narrative.",
+      "merged_from": [
+        "total_margin_scs_percentage_typo"
+      ]
+    }
+  ],
+  "raw_findings": [
+    {
+      "id": "segment_turnover_unit_mismatch_2019",
+      "category": "presentation",
+      "page": 177,
+      "description": "The header for the '2019' column mistakenly uses 'HK$000' as the unit, while the 2018 column uses 'US$000'. The turnover numbers (88,344,820) for SCS in 2019 are clearly in HK$ equivalent (Note 3 on page 178 shows 8,823,111 US$000), but the rest of the report uses US$ as the primary reporting currency. This inconsistency within a single table is a presentation error.",
+      "_run": "run_13"
+    },
+    {
+      "page": 150,
+      "id": "cash_flow_operating_subtotal_mismatch",
+      "description": "The sum of Net cash inflow from operating activities (280,854), Net cash outflow from investing activities (-63,570), and Net cash inflow from financing activities (103,610) equals 320,894. This matches the 'Increase in cash and cash equivalents from Continuing Operations' line. However, this total reflects ONLY Continuing Operations. The title 'Increase in cash and cash equivalents' (without the 'Continuing Operations' qualifier) on page 151 (PDF page 190) shows the same 320,894 figure for 2019, implying no cash flow from Discontinued Operations, which is consistent with the divestment having occurred in 2018. However, on page 150 (PDF page 5), the subtotal for 'Net cash outflow from operating activities' (280,854) is presented as the total of (327,617 + (1,129) + (35,119)), but 327,617 - 1,129 - 35,119 = 291,369. The subtotal 280,854 is incorrect based on its components.",
+      "expected": 291369,
+      "category": "cross_footing",
+      "_run": "run_13"
+    },
+    {
+      "page": 180,
+      "category": "cross_footing",
+      "description": "The 'Total remuneration to auditors charged to consolidated profit and loss account' is calculated as 2,710 + 1,210 + 591 = 4,511. However, the table incorrectly shows (4,511) in parentheses, representing a negative value or credit, whereas these are expenses described as being 'charged'. Furthermore, the 2018 total of 6,670 is the sum of 3,276 + 1,295 + 2,099. The 2019 total is incorrectly presented as a bracketed figure.",
+      "id": "auditor_remuneration_total_sign_error",
+      "actual": -4511,
+      "expected": 4511,
+      "_run": "run_13"
+    },
+    {
+      "page": 180,
+      "description": "Note 4 on page 180 shows 'Total remuneration to auditors... (4,511)'. This should be the total of 2,710 + 1,210 + 591. The 2018 total is 6,670. The 2019 total is shown in brackets, making it appear as a credit, but these are expenses. Additionally, the sub-note states US$2,576,000 and US$1,801,000 are the amounts payable to the 'Company's auditor' for audit and non-audit services. These sum to 4,377. The 'Total remuneration' line of 4,511 represents audit-related costs for the whole Group. The presentation of the total as a negative is incorrect.",
+      "category": "presentation",
+      "id": "auditor_remuneration_sign_presentation",
+      "_run": "run_13"
+    },
+    {
+      "id": "cash_flow_reconciliation_tie_mismatch",
+      "page": 211,
+      "category": "note_ties",
+      "description": "The reconciliation shows 'Net cash generated from operations' as 317,102. However, the Consolidated Cash Flow Statement on page 150 shows 'Net cash generated from operations' as 327,617. These values must tie.",
+      "expected": 327617,
+      "actual": 317102,
+      "_run": "run_13"
+    },
+    {
+      "id": "cop_to_operating_profit_math_verified",
+      "description": "The 'Core operating profit' for 2018 (Restated) is 295,135. Below it, the breakdown into 'Services' (240,385) and 'Products' (54,750) sums to 295,135. However, there is a separate line item for 'Gain on remeasurement of contingent consideration payable' of 8,948. According to the definition of 'Core Operating Profit' in Note 1.19 (page 167), core operating profit EXCLUDES gains on remeasurement of contingent consideration. Therefore, this 8,948 should be added to COP to reach Operating Profit, but it is not a component of COP. The layout on page 175 (PDF page 175) correctly separates it from COP, showing Operating Profit as 257,300 (which is 295,135 - 8,948 - other items). Wait, 295,135 - 8,948 - 29,136 (amortization) - 14,991 (reorg) - 2,656 (non-core) = 239,404, not 257,300. There is a fundamental calculation error in reaching Operating Profit from COP for 2018. 295,135 + 8,948 - 29,136 - 14,991 - 2,656 = 257,300. This confirms COP excludes the gain, but the math must include it to reach Operating Profit. 2019: 227,547 + 621 - 26,534 - 46,825 - 6,491 = 148,318. This matches. The error is the omission of the plus sign (income) vs minus sign (expense items) in visual understanding vs the result. Summary: Presentation is consistent, but components are complex. No error on signs here, just need to be careful.",
+      "page": 175,
+      "category": "presentation",
+      "_run": "run_13"
+    },
+    {
+      "category": "presentation",
+      "expected": 932167,
+      "actual": -932167,
+      "description": "On the Balance Sheet, 'Cash and bank balances' is an asset and should be a positive number. It is correctly shown as 932,167 on page 146. However, in Note 22 on page 195, it is shown as (932,167). Bracketed numbers in these statements consistently represent negative values or liabilities. This is a presentation error.",
+      "id": "cash_balance_note_sign_error",
+      "page": 195,
+      "_run": "run_13"
+    },
+    {
+      "page": 204,
+      "category": "cross_footing",
+      "description": "The subtotal for 'Within 1 year' (516,798), 'Between 1 and 2 years' (314,079), and 'Between 2 and 5 years' (732,974) is correct at 1,563,851. However, the table lists 'Wholly repayable within 5 years' as 1,538,851. This is a math error (1,563,851 vs 1,538,851). Then adding 'Over 5 years' (54,540) to 1,538,851 gives 1,593,391, which matches the total at the bottom. This implies the 'Wholly repayable within 5 years' subtotal is incorrect by 25,000. Additionally, on page 173 (PDF page 173), the breakdown of non-current liabilities sums 300,000 + 871,254 + 4,823 + 415,702 + 1,612 = 1,593,391. This total is correct for the gross non-current portion. However, page 204 (PDF page 247) shows 1,593,391 as the total of all long-term liabilities including the current portion. The labels are very confusing. Page 173 total (1,593,391) includes the current portion of long-term notes (374,361) and lease liabilities (117,437), but page 147 (PDF page 104) total for Non-current liabilities is 1,113,221. The difference 1,593,391 - 1,113,221 = 480,170. The current portions on page 146 are 374,361 (notes) + 117,437 (leases) + 819 (divested acquisitions) = 492,617. The mismatch is 12,447. This indicates major reconciliation issues between the notes and the face of the balance sheet for long-term liabilities.",
+      "id": "long_term_liabilities_maturity_subtotal_mismatch",
+      "actual": 1593391,
+      "expected": 1563851,
+      "_run": "run_13"
+    },
+    {
+      "page": 146,
+      "category": "cross_footing",
+      "id": "bs_non_current_assets_mismatch_2019",
+      "description": "On the Consolidated Balance Sheet for 2019, the sum of the non-current asset components (2,373,252 + 195,876 + 383,802 + 15 + 6,274 + 2,737 + 25,421 + 26,948) equals 3,014,325. However, the subtotal for non-current liabilities is shown as 2,940,021. Note 11 rollforward indicates the Intangible assets value should be 2,298,948, which would make the subtotal foot correctly.",
+      "_run": "run_21"
+    },
+    {
+      "category": "cross_footing",
+      "id": "bs_reserves_cross_footing_2019",
+      "description": "On the Consolidated Balance Sheet for 2019, the sum of Share capital (13,686) and Reserves (1,170,520) equals 1,184,206. This does not equal the subtotal for 'Shareholders’ funds attributable to the Company’s Shareholders' of 1,264,206. Based on the Statement of Changes in Equity, the Reserves figure should be 1,250,520.",
+      "page": 147,
+      "_run": "run_21"
+    },
+    {
+      "page": 143,
+      "description": "On the Consolidated Profit and Loss Account for 2019, Gross profit is calculated as Turnover (11,413,312) minus Cost of sales (10,221,721), which equals 1,191,591. The table incorrectly shows Gross profit as 1,241,591.",
+      "id": "pl_gross_profit_calc_error_2019",
+      "category": "cross_footing",
+      "_run": "run_21"
+    },
+    {
+      "category": "cross_footing",
+      "page": 143,
+      "id": "pl_total_margin_calc_error_2019",
+      "expected": 1269336,
+      "actual": 1219336,
+      "description": "On the Consolidated Profit and Loss Account for 2019, Total margin is the sum of Gross profit (1,241,591) and Other income (27,745), which equals 1,269,336. The table incorrectly shows Total margin as 1,219,336. Note: 1,219,336 is correct if using the calculated Gross profit of 1,191,591.",
+      "_run": "run_21"
+    },
+    {
+      "actual": 327617,
+      "expected": 317102,
+      "id": "cfs_generated_cash_mismatch_2019",
+      "page": 150,
+      "category": "note_ties",
+      "description": "On the Consolidated Cash Flow Statement, 'Net cash generated from operations' for 2019 is shown as 327,617. However, the Note 31(a) reconciliation on page 211 shows this figure as 317,102. The calculation of components in Note 31(a) and the footed total for operating activities on the CFS both support 317,102.",
+      "_run": "run_21"
+    },
+    {
+      "page": 150,
+      "id": "cfs_inflow_outflow_label_error",
+      "description": "On the Consolidated Cash Flow Statement, the operating subtotal row for 2019 (US$280,854) and 2018 (US$368,171) is labeled 'Net cash outflow from operating activities', despite both values being positive (representing cash inflows).",
+      "category": "presentation",
+      "_run": "run_21"
+    },
+    {
+      "description": "In Note 1.1(A) 'Impact of adoption of HKFRS 16', the top table is headed 'As at 1 January 2019', but the data within (specifically the 'Assets classified as held for sale' line item related to divested businesses) indicates these are the restatements for the start of the comparative period, 1 January 2018.",
+      "category": "presentation",
+      "page": 154,
+      "id": "note_1_date_header_error",
+      "_run": "run_21"
+    },
+    {
+      "id": "gbg_ageing_bucket_inconsistency",
+      "page": 224,
+      "category": "reasonableness",
+      "description": "In Note 38(b) for Credit Risk, it states that the 181 to 365 days overdue trade receivables bucket for Global Brands Group (GBG) is US$141,363,000. However, Note 19 'Due from/(to) Related Companies' shows that the total overdue amount in the 181 to 365 days bucket for ALL related companies (including GBG) is only US$135,600,000. A sub-set cannot be larger than the total.",
+      "_run": "run_21"
+    },
+    {
+      "page": 192,
+      "description": "In Note 19, the ageing table for 'trade amount due from other related companies' for 2019 does not cross-foot. The components (256,330 + 147,946 + 141,393) sum to 545,669, but the reported total is 539,876.",
+      "id": "note_19_ageing_crossfoot_2019",
+      "category": "cross_footing",
+      "_run": "run_27"
+    },
+    {
+      "actual": 88344820,
+      "expected": 8834482,
+      "id": "note_3_services_turnover_crossfoot",
+      "description": "In Note 3 supplementary analysis for the Services segment, the turnover for Supply Chain Solutions is reported as 88,344,820 (HK$'000). Adding this to Logistics Services (1,173,277) and subtracting Eliminations (8,058) equals 89,510,039, but the table reports a total of 9,999,701. The value for SCS is likely 8,834,482 in US$'000, matching other data points.",
+      "page": 177,
+      "category": "cross_footing",
+      "_run": "run_27"
+    },
+    {
+      "category": "cross_footing",
+      "page": 204,
+      "actual": 1538851,
+      "id": "note_28_maturity_subtotal_mismatch_2019",
+      "expected": 1563851,
+      "description": "In Note 28 maturity analysis for 2019, the subtotal 'Wholly repayable within 5 years' is reported as 1,538,851. However, the sum of the components (Within 1 year: 516,798; Between 1 and 2 years: 314,079; Between 2 and 5 years: 732,974) is 1,563,851.",
+      "_run": "run_27"
+    },
+    {
+      "expected": 1250520,
+      "actual": 1170520,
+      "id": "reserves_balance_sheet_mismatch_2019",
+      "page": 147,
+      "category": "cross_footing",
+      "description": "On the Consolidated Balance Sheet (Financed by section), for 2019, the Reserves are reported as 1,170,520. However, the subtotal 'Shareholders’ funds attributable to the Company’s Shareholders' is 1,264,206 and Share Capital is 13,686, implying Reserves should be 1,250,520 (1,264,206 - 13,686). This expected value of 1,250,520 also matches the sum of reserves on the Statement of Changes in Equity (Page 148).",
+      "_run": "run_27"
+    },
+    {
+      "category": "presentation",
+      "expected": 11413312,
+      "id": "pl_turnover_value_mismatch_2019",
+      "description": "The Consolidated Profit and Loss Account for 2019 reports Turnover of 11,601,937. This contradicts the Summary of the Year (Page 72), Segment Information (Page 175), and Ten-Year Summary (Page 244), which all report 11,413,312. Use of 11,413,312 would correctly cross-foot with Total Margin. Additionally, the label 'Gross loss' is used instead of 'Gross profit' for the 1,241,591 figure.",
+      "page": 143,
+      "actual": 11601937,
+      "_run": "run_27"
+    },
+    {
+      "description": "The header for the 2019 column in the Consolidated Profit and Loss Account is labeled 'HK$.000', while the 2018 column is 'US$.000'. All other financial statements and notes use US$ as the presentation currency. This appears to be a labeling error for the 2019 column.",
+      "id": "pl_header_currency_mismatch_2019",
+      "category": "presentation",
+      "page": 143,
+      "_run": "run_27"
+    },
+    {
+      "category": "presentation",
+      "page": 195,
+      "id": "note_22_cash_signage_error_2019",
+      "description": "In Note 22, 'Cash and bank balances' for 2019 is reported as (932,167) using parentheses, which typically denotes a negative value (overdraft). However, the Consolidated Balance Sheet and several other pages confirm this is a positive cash position of 932,167.",
+      "_run": "run_27"
+    },
+    {
+      "category": "note_ties",
+      "page": 146,
+      "expected": 2298948,
+      "description": "Intangible assets on the Consolidated Balance Sheet (US$2,373,252k) does not tie to Note 11 'Intangible Assets' closing net book amount (US$2,298,948k). Also mismatch with the Ten-Year Financial Summary on page 245.",
+      "actual": 2373252,
+      "id": "intangible_assets_note_tie_mismatch",
+      "_run": "run_18"
+    },
+    {
+      "id": "pl_wrong_year_title",
+      "description": "The Consolidated Profit and Loss Account title incorrectly states 'For the year ended 31 December 2018' instead of 2019, despite the columns and the rest of the report being for 2019.",
+      "category": "presentation",
+      "page": 143,
+      "_run": "run_18"
+    },
+    {
+      "category": "presentation",
+      "id": "bs_wrong_section_header",
+      "description": "The Consolidated Balance Sheet section listing assets (Intangible assets, Property, plant and equipment, etc.) is incorrectly headed 'Non-current liabilities' instead of 'Non-current assets'.",
+      "page": 146,
+      "_run": "run_18"
+    },
+    {
+      "description": "In Note 28, the 2019 maturity analysis table columns (516,798 + 314,079 + 732,974 + 54,540) sum to 1,618,391, which does not equal the reported total of 1,593,391.",
+      "expected": 1618391,
+      "actual": 1593391,
+      "id": "lt_liabilities_maturity_math_mismatch",
+      "category": "cross_footing",
+      "page": 204,
+      "_run": "run_18"
+    },
+    {
+      "id": "div_note_subtotal_mismatch",
+      "actual": 10962,
+      "description": "In Note 8 'Dividends', the total for 2019 (US$10,962k) does not equal the sum of the components (Interim US$15,962k + Final US$0).",
+      "expected": 15962,
+      "page": 181,
+      "category": "cross_footing",
+      "_run": "run_18"
+    },
+    {
+      "description": "The interim dividend amount in Note 8 (US$15,962k) does not tie to the amount reported in the Consolidated Statement of Changes in Equity (US$10,962k).",
+      "category": "note_ties",
+      "id": "interim_dividend_statement_tie_mismatch",
+      "expected": 10962,
+      "page": 181,
+      "actual": 15962,
+      "_run": "run_18"
+    },
+    {
+      "actual": 539876,
+      "page": 192,
+      "expected": 545669,
+      "description": "In Note 19(a), the aging of trade amounts due from other related companies (256,330 + 147,946 + 141,393) sums to 545,669, but the total is reported as 539,876.",
+      "category": "cross_footing",
+      "id": "related_parties_aging_math_mismatch",
+      "_run": "run_18"
+    },
+    {
+      "description": "The 'Net cash generated from operations' line item on the Consolidated Cash Flow Statement (US$327,617k) does not tie to the corresponding reconciliation in Note 31(a) (US$317,102k).",
+      "actual": 327617,
+      "category": "note_ties",
+      "expected": 317102,
+      "page": 150,
+      "id": "cf_ops_note_tie_mismatch",
+      "_run": "run_18"
+    },
+    {
+      "page": 211,
+      "id": "cf_rec_subtotal_mismatch",
+      "description": "In Note 31(a), the reconciliation of Operating Profit before working capital changes does not foot. Summing Profit before Taxation (70,027) and the listed adjustments (excluding working capital) results in 427,535, not the reported 417,535.",
+      "category": "cross_footing",
+      "actual": 417535,
+      "expected": 427535,
+      "_run": "run_18"
+    },
+    {
+      "actual": 280854,
+      "expected": 291369,
+      "page": 150,
+      "description": "On the Consolidated Cash Flow Statement, 'Net cash outflow from operating activities' (US$280,854k) does not equal the sum of its components: Net cash generated from operations (327,617), HK tax paid (1,129), and Overseas tax paid (35,119), which sum to US$291,369k. (Note: The calculation works if the Note 31(a) value is used, but the statement line item is wrong).",
+      "category": "cross_footing",
+      "id": "cf_ops_net_crossfoot_mismatch",
+      "_run": "run_18"
+    },
+    {
+      "description": "In the 'Directors' and Chief Executive's Emoluments' table for 2019, the total for William Fung Kwok Lun is shown as 755. The sum of the components (Fees 39 + Salary 619 + Award Shares gain 97) is 755. This is correct. However, for Spencer Theodore Fung, the components are Fees 39, Salary 653, Discretionary bonuses 247, Award Shares gain 253, and Employer's contribution to a retirement benefit scheme 2. The sum is 1,194 (39+653+247+253+2). This is also correct. Wait, let me re-check the OCR and image for subtotals. On page 231 (under Note 42), the total for William Fung Kwok Lun is 755. Sum: 39 + 619 + 97 = 755. For Spencer Theodore Fung: 39 + 653 + 247 + 253 + 2 = 1,194. For Joseph C. Phi: 39 + 603 + 286 + 217 + 27 + 2 + 2,000 = 3,174. All Executive Director totals match. Re-checking Non-executive directors. Victor Fung Kwok King: 63 = 63. Marc Robert Compagnon: 45 + 151 + 54 + 235 + 30 + 1 = 516. Total shown: 516. Other NEDs are all just Fees and match their totals. No math error here.",
+      "category": "cross_footing",
+      "id": "emoluments_crossfoot_check",
+      "page": 231,
+      "_run": "run_5"
+    },
+    {
+      "page": 143,
+      "category": "presentation",
+      "description": "On page 143, the title of the statement is 'Consolidated Profit and Loss Account' but the subtitle below incorrectly states 'For the year ended 31 December 2018'. Since this is the 2019 Annual Report, the primary reporting period should be 2019. The 2019 column is present, making the 2018 date in the heading a typo.",
+      "id": "pl_statement_period_mismatch",
+      "_run": "run_5"
+    },
+    {
+      "description": "The Consolidated Profit and Loss Account on page 143 shows Turnover for 2019 as 11,601,937. However, the units in the column header are 'HK$000' while every other financial statement and note uses 'US$000'. Based on page 14 (OCR 22) which shows turnover as US$11.4 billion, 11,601,937 is likely thousands of US dollars (US$11.6B before adjustments/restatements, though the final summary says 11,413M). If it were HK$, the amount would be much larger. This is a severe unit labeling error. (Note: Total turnover on page 14 is 11,413M US$, and on page 143 it is 11,601,937 units. This 11,601,937 doesn't match the 11,413,312 shown in the summary on page 6 or the segment info on page 178).",
+      "actual": 11601937,
+      "page": 143,
+      "category": "presentation",
+      "id": "pl_turnover_unit_and_value_mismatch",
+      "expected": 11413312,
+      "_run": "run_5"
+    },
+    {
+      "id": "pl_incorrect_section_label_continuing_vs_discontinued",
+      "page": 143,
+      "description": "On page 143 (Consolidated Profit and Loss Account), the top-level section is incorrectly labeled 'Discontinued Operations'. It should be 'Continuing Operations'. The 'Discontinued Operations' section correctly appears at the bottom of the same page.",
+      "category": "presentation",
+      "_run": "run_5"
+    },
+    {
+      "description": "The Consolidated Profit and Loss Account on page 143 shows 'Gross loss' of 1,241,591 for 2019. However, Turnover (11,601,937) is greater than Cost of sales (10,221,721), resulting in a Gross Profit. The 'Gross loss' label is incorrect. Similarly, for 2018, Turnover exceeds Cost of sales, yet the label is the same.",
+      "page": 143,
+      "id": "pl_gross_loss_label_error",
+      "category": "presentation",
+      "_run": "run_5"
+    },
+    {
+      "page": 152,
+      "description": "On page 152 (Note 1.1(A)), the text lists 'HKFRS 17 Leases'. HKFRS 17 is actually 'Insurance Contracts'. The correct standard for Leases is HKFRS 16. This is confirmed by Note 1.22 on page 169 which correctly identifies Leases as Note 1.1(A).",
+      "id": "wrong_accounting_standard_reference_leases",
+      "category": "presentation",
+      "_run": "run_5"
+    },
+    {
+      "category": "presentation",
+      "page": 106,
+      "id": "mislabeling_accounting_standards_note_1_1_a",
+      "description": "On page 152 (Note 1.1(A)), under 'New Standard... Adopted by the Group', it lists 'HKAS 28 Amendment' as 'Long-term Interests in Associates and Joint Ventures'. However, the index also lists an 'HKAS 20 Amendment' with no description (though Note 1.1(A) on page 106 seems to show it as part of the list). Looking at the index, Note 29 is 'Post-employment Benefit Obligations' which relies on IAS 19. No mention of IAS 20 (Gov Grants) is relevant here. The note on page 152 actually lists 'HKAS 19 Amendment' correctly in the next line. This looks like a duplicate or mislabeled entry. Re-checking page 44 (OCR): it shows 'HKFRS 10 and HKAS 28 Amendment'. Note 1.1(A) on page 152 lists 'HKAS 28 Amendment'. This standard is correct, but there's a confusing entry for 'HKAS 20' in some OCR versions. Looking closer at image 152, it says 'HKAS 28 Amendment'. But wait, page 106 OCR says 'HKAS 20 Amendment'. Checking image 106... it definitely says 'HKAS 28 Amendment'. OCR noise. However, look at page 106 again. It lists 'HKFRS 17 Leases' again. Typo confirmed.",
+      "_run": "run_5"
+    },
+    {
+      "id": "cash_note_parentheses_error",
+      "page": 195,
+      "category": "note_ties",
+      "description": "On page 146 (Consolidated Balance Sheet), 'Cash and bank balances' for 2019 is US$932,167. Note 22 on page 195 shows the same amount but lists it as '(932,167)'. Assets should not be shown in parentheses in a detail note if they are positive balances. Page 172 also shows US$932,167. The parentheses in Note 22 are a presentation error.",
+      "_run": "run_5"
+    },
+    {
+      "id": "deferred_tax_rollforward_check_success",
+      "category": "rollforward",
+      "description": "In Note 30 Deferred Taxation (page 209), the rollforward for 'Tax losses' shows 'At 31 December' as 24,910. The components are: Balance at 1 January (as restated) 19,091 + Credited to consolidated P&L 5,891 - Exchange differences 72. Calculation: 19,091 + 5,891 - 72 = 24,910. This matches. However, the 'Total' column for 2019 says 'At 31 December' 45,992. Sum of components: 7,536 (Provisions) + 2,283 (Decelerated tax dep) + 24,910 (losses) + 11,263 (Others) = 45,992. Correct. Now check row 'Charged to OCI': others 1,647, total 1,647. Correct. Check 'Exchange differences': 308 (Provisions) - 10 (Decelerated) - 72 (Losses) - 802 (Others) = -576. Correct. The 2019 rollforward sums correctly. Now check 2018 column. Total At 31 December (2018): 5,623 + 790 + 19,091 + 12,180 = 37,684. Correct. Wait, page 92 shows total 2018 as 37,684. Page 209 shows 37,684. This matches. Let's check deferred tax liabilities on page 210. At 31 Dec 2019: 7,467 + 13,110 + 462 = 21,039. Matches statement. No error found in this complex rollforward.",
+      "page": 209,
+      "_run": "run_5"
+    },
+    {
+      "page": 143,
+      "category": "cross_footing",
+      "id": "pl_turnover_note_tie_discrepancy",
+      "expected": 11601937,
+      "description": "On page 178 (Note 3 Segment Information), Turnover to external customers is detailed. For 2019: Sales of soft goods (7,498,039) + Sales of hard goods (2,762,910) + Logistics services income (1,152,363) = 11,413,312. This matches the 'Total' turnover of 11,413,312 on the same page. This value tied to the summary page 6. However, on page 143 (Consolidated P&L), Turnover is listed as 11,601,937. This is a discrepancy of 188,625. Note 3 on page 175 shows Turnover as 11,413,312. Note 3 on page 170 (for 2018 restated) ties. The value on the main P&L account (page 143) does not tie to its own supporting Note 3 (pages 175/178).",
+      "actual": 11413312,
+      "_run": "run_5"
+    },
+    {
+      "category": "cross_footing",
+      "id": "cop_rounding_check",
+      "actual": 227547,
+      "page": 143,
+      "expected": 227547,
+      "description": "On page 143 (Consolidated Profit and Loss Account), Core operating profit for 2019 is given as 227,547. Calculation: Total margin 1,219,336 - Selling/dist expenses 384,973 - Merchandising/admin expenses 606,816 = 227,547. This matches. However, the Summary of the Year (page 240) and various graphs (pages 130, 210) show Core Operating Profit as US$228M. 227,547 rounds to 228. This is acceptable rounding. (Note: Page 6 overview says 228M, P&L on 143 says 227,547. This is consistent).",
+      "_run": "run_5"
+    },
+    {
+      "actual": 148318,
+      "category": "presentation",
+      "page": 143,
+      "description": "On page 143 (Consolidated profit and loss), Operating Profit for 2019 is 148,318. Calculation: Core operating profit 227,547 + Gain on remeasurement 621 - Amortization 26,534 - Non-recurring reorganization 46,825 - Other non-core 6,491 = 148,318. Correct. Finance costs are (89,786). Interest income 11,531. Share of losses (36). Profit before taxation calculation: 148,318 + 11,531 - 89,786 - 36 = 70,027. Matches statement. Taxation (15,756). Profit for year from Continuing Ops: 70,027 - 15,756 = 54,271. Matches. Calculation is correct. Note: The unit 'HK$000' in header is definitely a typo for 'US$000'.",
+      "id": "pl_math_verification_success_typo_header",
+      "expected": 148318,
+      "_run": "run_5"
+    },
+    {
+      "expected": 4511,
+      "id": "auditor_remuneration_sign_inconsistency",
+      "page": 180,
+      "actual": -4511,
+      "category": "presentation",
+      "description": "In Note 4, the total remuneration to auditors for 2019 is shown in brackets as (4,511) US$'000, which inconsistent with its components (2,710, 1,210, 591) which are shown as positive values. In expense notes, brackets typically denote credits or income, but this is a sum of expenses. Other charges in Note 4 (page 179) are shown as positive.",
+      "_run": "run_25"
+    },
+    {
+      "page": 151,
+      "description": "In the 'Analysis of the balances of cash and cash equivalents' section of the Cash Flow Statement, the subline for 'Continuing Operations' under 1 January 2019 is 612,931 US$'000. When added to 'Discontinued Operations' of nil, it should equal the total 1 January balance of 612,391 US$'000 shown below it. There is a discrepancy of 540 US$'000.",
+      "expected": 612391,
+      "actual": 612931,
+      "category": "cross_footing",
+      "id": "cash_flow_opening_balance_split_error",
+      "_run": "run_25"
+    },
+    {
+      "actual": 88344820,
+      "description": "In the supplementary analysis for the Services segment, the 'Supply Chain Solutions' turnover for 2019 is listed as 88,344,820, while the table header is labeled 'HK$'000'. This contradicts Note 3 on page 175 and page 39, which specify the total services turnover is 9,999,701 US$'000. Calculation shows SCS turnover should be 8,834,482 US$'000 (as confirmed by the 2018 value of 9,933,108 US$'000); thus the figure likely has an extra digit and incorrect currency label.",
+      "category": "presentation",
+      "page": 172,
+      "id": "segment_turnover_unit_and_value_error",
+      "expected": 8834482,
+      "_run": "run_25"
+    },
+    {
+      "category": "note_ties",
+      "expected": 11413312,
+      "description": "The Turnover figure for 2019 on the face of the Consolidated Profit and Loss Account is stated as 11,601,937 US$'000. This does not tie to the total Turnover of 11,413,312 US$'000 reported in Note 3 (page 175), the Summary of the Year (page 6), or the Ten-Year Financial Summary (page 244). Furthermore, the column header incorrectly omits 'US' and displays 'HK$·000'.",
+      "actual": 11601937,
+      "id": "pl_face_turnover_mismatch_and_unit_error",
+      "page": 143,
+      "_run": "run_25"
+    },
+    {
+      "page": 146,
+      "description": "On the Consolidated Balance Sheet for 2019, 'Intangible assets' is reported as 2,373,252 US$'000. Note 11 (page 184) reports total intangible assets as 2,298,948 US$'000. The non-current asset total of 2,940,021 US$'000 only foots if the correct value from the note (2,298,948) is used.",
+      "expected": 2298948,
+      "id": "intangible_assets_bs_note_tie_error",
+      "category": "note_ties",
+      "actual": 2373252,
+      "_run": "run_25"
+    },
+    {
+      "page": 147,
+      "category": "note_ties",
+      "expected": 1250520,
+      "description": "On the Consolidated Balance Sheet for 2019, the 'Reserves' line under Equity is reported as 1,170,520 US$'000. According to the Statement of Changes in Equity (page 148), total reserves attributable to shareholders (Premium + Other + Retained) equals 1,250,520 US$'000. The subtotal 'Shareholders’ funds' on page 147 (1,264,206) also only foots if the correct total reserves value of 1,250,520 is used (as Capital is 13,686).",
+      "id": "equity_reserves_tie_and_footing_error_bs",
+      "actual": 1170520,
+      "_run": "run_25"
+    },
+    {
+      "expected": 932167,
+      "description": "In Note 22, the 2019 balance for 'Cash and bank balances' is shown in brackets as (932,167) US$'000. This is a positive asset balance of 932,167 US$'000 as shown on the Balance Sheet (page 146) and elsewhere; brackets erroneously imply a negative/overdrawn balance.",
+      "category": "presentation",
+      "id": "cash_note_sign_error_2019",
+      "page": 195,
+      "actual": -932167,
+      "_run": "run_25"
+    },
+    {
+      "description": "In Note 21, the ageing table for trade amount due from other related companies for 2019 shows components of 256,330, 147,946, and 141,393. The sum is 545,669, but the total at the bottom of the table is incorrectly stated as 539,876.",
+      "id": "related_party_ageing_cross_foot_error",
+      "page": 238,
+      "actual": 539876,
+      "category": "cross_footing",
+      "expected": 545669,
+      "_run": "run_25"
+    },
+    {
+      "expected": 1264206,
+      "description": "In the Ten-Year Financial Summary table on the Balance Sheet page, the row for 'Shareholders' funds' for 2019 displays the value 2,112,786 US$'000. This is actually the 'Total Equity' (from page 147), which includes Non-controlling interests and Perpetual securities. The actual 'Shareholders’ funds' attributable to the Company's Shareholders is 1,264,206 US$'000. This mialsbels total equity as shareholders' funds.",
+      "id": "ten_year_summary_row_label_error",
+      "actual": 2112786,
+      "category": "presentation",
+      "page": 245,
+      "_run": "run_25"
+    },
+    {
+      "description": "The Consolidated Profit and Loss Account is incorrectly subtitled 'For the year ended 31 December 2018', while the report and the data presented are for the 2019 financial year.",
+      "page": 143,
+      "category": "presentation",
+      "id": "pl_incorrect_title_date",
+      "_run": "run_1"
+    },
+    {
+      "expected": 2298948,
+      "category": "note_ties",
+      "id": "intangible_assets_note_tie_mismatch",
+      "actual": 2373252,
+      "page": 146,
+      "description": "The 'Intangible assets' line item on the Consolidated Balance Sheet (2,373,252) does not tie to the detailed Note 11 'Intangible Assets' net book value total (2,298,948). The total Non-current assets subtotal (2,940,021) suggests the BS line item is a typo.",
+      "_run": "run_1"
+    },
+    {
+      "page": 147,
+      "category": "cross_footing",
+      "expected": 1250520,
+      "id": "bs_reserves_cross_foot_error",
+      "actual": 1170520,
+      "description": "On the Balance Sheet, the 'Reserves' line (1,170,520) added to 'Share capital' (13,686) does not equal the reported subtotal 'Shareholders’ funds attributable to the Company's Shareholders' (1,264,206). Based on the SOCE and Note 26, the reserves value should be 1,250,520.",
+      "_run": "run_1"
+    },
+    {
+      "category": "note_ties",
+      "actual": 327617,
+      "description": "In the Consolidated Cash Flow Statement, the line item 'Net cash generated from operations' (327,617) does not tie to the corresponding reconciliation total in Note 31(a) (317,102).",
+      "page": 150,
+      "expected": 317102,
+      "id": "cf_operating_note_tie_mismatch",
+      "_run": "run_1"
+    },
+    {
+      "actual": 280854,
+      "expected": 291369,
+      "id": "cf_operating_activities_subtotal_error_2019",
+      "page": 150,
+      "description": "In the Consolidated Cash Flow Statement, the subtotal 'Net cash outflow from operating activities' (280,854) does not equal the sum of its components: 327,617 (Reporting mistake per Note tie) - 1,129 - 35,119 = 291,369. Based on the correct amount from Note 31(a), the total should be 280,854, indicating line 1 is the primary error.",
+      "category": "cross_footing",
+      "_run": "run_1"
+    },
+    {
+      "id": "note_8_dividends_math_error",
+      "actual": 10962,
+      "expected": 15962,
+      "category": "cross_footing",
+      "description": "In Note 8 'Dividends', the total for 2019 is reported as 10,962, but the sum of the components provided (15,962 interim + 0 final) is 15,962.",
+      "page": 181,
+      "_run": "run_1"
+    },
+    {
+      "description": "In Note 4, the 'Total remuneration to auditors' for 2019 is shown in brackets (4,511) while the 2018 value (6,670) is not, despite both representing costs charged to the profit and loss account.",
+      "id": "auditor_remuneration_signage_inconsistency",
+      "page": 180,
+      "category": "presentation",
+      "_run": "run_1"
+    },
+    {
+      "category": "cross_footing",
+      "expected": 545669,
+      "description": "In Note 19(a), the ageing breakdown of trade amounts due from related companies for 2019 sums to 545,669 (256,330 + 147,946 + 141,393), but the reported total is 539,876.",
+      "id": "note_19_related_party_ageing_mismatch",
+      "page": 192,
+      "actual": 539876,
+      "_run": "run_1"
+    },
+    {
+      "page": 209,
+      "description": "In Note 30 'Deferred Taxation', the top summary move for hedging reserve (-1,007) does not tie to the detailed liability movement table on page 210, which shows a charge of 1,198.",
+      "expected": 1198,
+      "actual": -1007,
+      "category": "note_ties",
+      "id": "deferred_tax_summary_tie_error",
+      "_run": "run_1"
+    },
+    {
+      "actual": 2373252,
+      "expected": 2298948,
+      "page": 146,
+      "id": "intangible_assets_balance_mismatch",
+      "category": "note_ties",
+      "description": "Intangible assets on Balance Sheet is US$2,373,252 but Note 11 (page 184) shows US$2,298,948. The subtotal on the Balance Sheet correctly uses the Note 11 figure, proving the face item is a typo.",
+      "_run": "run_28"
+    },
+    {
+      "expected": 1250520,
+      "description": "Reserves on page 147 is US$1,170,520. However, the subtotal 'Shareholders' funds' is US$1,264,206 and Share Capital is US$13,686, which implies Reserves should be US$1,250,520 (mismatch of US$80,000). Note 26 also confirms US$1,250,520.",
+      "id": "balance_sheet_reserves_crossfoot_mismatch",
+      "page": 147,
+      "category": "cross_footing",
+      "actual": 1170520,
+      "_run": "run_28"
+    },
+    {
+      "description": "'Net cash generated from operations' on page 150 is US$327,617, but Note 31(a) (page 211) shows US$317,102.",
+      "page": 150,
+      "actual": 327617,
+      "expected": 317102,
+      "category": "note_ties",
+      "id": "cash_flow_operations_note_tie_mismatch",
+      "_run": "run_28"
+    },
+    {
+      "expected": 291369,
+      "actual": 280854,
+      "category": "cross_footing",
+      "id": "cash_flow_net_operating_math_error",
+      "description": "Mathematical error on page 150: 'Net cash generated from operations' (US$327,617) minus taxes paid (US$1,129 and US$35,119) should equal US$291,369, but US$280,854 is reported. (Reported value footprints correctly using the expected value from Note 31(a) of 317,102).",
+      "page": 150,
+      "_run": "run_28"
+    },
+    {
+      "id": "cash_flow_operating_direction_label_error",
+      "description": "Label 'Net cash outflow from operating activities' on page 150 is incorrect as the reported figure is a positive cash generation (inflow).",
+      "category": "presentation",
+      "page": 150,
+      "_run": "run_28"
+    },
+    {
+      "page": 152,
+      "description": "Note 1.1(A) table misidentifies the new Leases standard as 'HKFRS 17'. The correct standard for Leases is HKFRS 16. HKFRS 17 relates to Insurance Contracts.",
+      "category": "presentation",
+      "id": "leases_standard_reference_error",
+      "_run": "run_28"
+    },
+    {
+      "actual": -932167,
+      "page": 195,
+      "description": "Note 22 shows the cash asset balance US$932,167 in parentheses as (932,167), improperly representing it as a credit/negative balance. It is shown as a positive asset elsewhere.",
+      "id": "cash_note_parentheses_error",
+      "expected": 932167,
+      "category": "presentation",
+      "_run": "run_28"
+    },
+    {
+      "id": "cf_operating_cash_mismatch",
+      "page": 150,
+      "description": "On the Consolidated Cash Flow Statement, \"Net cash generated from operations\" for 2019 is shown as US$327,617,000, but the components of the operating activities section (327,617 - 1,129 - 35,119) should total to US$291,369,000 relative to the stated section subtotal of US$280,854,000. Note 31(a) on page 211 accurately reflects \"Net cash generated from operations\" as US$317,102,000, which correctly sums to the subtotal (317,102 - 1,129 - 35,119 = 280,854).",
+      "category": "rollforward",
+      "_run": "run_6"
+    },
+    {
+      "page": 146,
+      "category": "presentation",
+      "description": "The first section of the Consolidated Balance Sheet is incorrectly headed \"Non-current liabilities\" but contains Non-current asset classes (Intangible assets, Property, plant and equipment, etc.).",
+      "id": "bs_non_current_assets_header_mislabel",
+      "_run": "run_6"
+    },
+    {
+      "description": "In the \"Financed by\" section of the Consolidated Balance Sheet, for 2019, the sum of \"Share capital\" (US$13,686,000) and \"Reserves\" (US$1,170,520,000) is US$1,184,206,000, which does not cross-foot to the stated subtotal \"Shareholders' funds attributable to the Company's Shareholders\" of US$1,264,206,000. Based on underlying components in the Consolidated Statement of Changes in Equity (Page 148), \"Reserves\" should be US$1,250,520,000.",
+      "id": "bs_reserves_mismatch_crossfoot",
+      "page": 147,
+      "expected": 1250520,
+      "category": "cross_footing",
+      "actual": 1170520,
+      "_run": "run_6"
+    },
+    {
+      "category": "presentation",
+      "page": 143,
+      "id": "pl_continuing_header_mislabel",
+      "description": "On the Consolidated Profit and Loss Account, the bold heading above the turnover and operating profit section for continuing operations is incorrectly labeled \"Discontinued Operations\".",
+      "_run": "run_6"
+    },
+    {
+      "page": 180,
+      "id": "note_4_auditor_remun_parentheses",
+      "category": "presentation",
+      "description": "In Note 4, the \"Total remuneration to auditors charged to consolidated profit and loss account\" for 2019 is shown as \"(4,511)\" in parentheses. This sign indicates a credit or negative amount, which is inconsistent with the nature of the expense and the comparative 2018 figure of \"6,670\" which is not in parentheses.",
+      "_run": "run_6"
+    },
+    {
+      "category": "note_ties",
+      "page": 223,
+      "id": "gb_receivables_overdue_mismatch_91_180",
+      "description": "In Note 38(b) \"Credit Risk\", accounts receivable from Global Brands Group (GBG) overdue \"91 to 180 days\" is stated as US$147,909,000. This does not tie to the corresponding amount in the aging table in Note 19 on page 192 (which correctly forms part of the \"Other related companies\" balance), which lists it as US$147,946,000.",
+      "actual": 147909000,
+      "expected": 147946000,
+      "_run": "run_6"
+    },
+    {
+      "page": 223,
+      "expected": 141393000,
+      "id": "gb_receivables_overdue_mismatch_181_365",
+      "actual": 141363000,
+      "description": "In Note 38(b) \"Credit Risk\", accounts receivable from Global Brands Group (GBG) overdue \"181 to 365 days\" is stated as US$141,363,000. This does not tie to the corresponding amount in the aging table in Note 19 on page 192, which lists it as US$141,393,000.",
+      "category": "note_ties",
+      "_run": "run_6"
+    },
+    {
+      "category": "rollforward",
+      "description": "Perpetual capital securities balance at 1 January 2019 as previously reported is listed as 680,804, but the 31 December 2018 closing balance was 655,687. The value 655,687 is also used in the calculation of the \"Total Equity\" column for the same row.",
+      "expected": 655687,
+      "actual": 680804,
+      "page": 10,
+      "id": "perpetual_securities_opening_mismatch",
+      "_run": "run_15"
+    },
+    {
+      "id": "p_and_l_cop_footing_2019",
+      "expected": 277547,
+      "description": "Core Operating Profit for 2019 is listed as 227,547, but the sum of Total Margin (1,219,336) less Selling and distribution expenses (384,973) and Merchandising and administrative expenses (606,816) is 227,547. Wait, recalculating: 1,219,336 - 384,973 - 606,816 = 227,547. Actually, it does foot. Let me re-check. OCR mismatch? GP (1,241,591) + Other Income (27,745) = 1,269,336 (Total Margin). 1,269,336 - 384,973 - 606,816 = 277,547. Shown is 227,547. Difference is 50,000.",
+      "actual": 227547,
+      "page": 143,
+      "category": "cross_footing",
+      "_run": "run_15"
+    },
+    {
+      "category": "cross_footing",
+      "actual": 1538851,
+      "expected": 1563851,
+      "description": "The subtotal for 'Wholly repayable within 5 years' in 2019 is shown as 1,538,851, but the sum of its components (Within 1 year: 516,798; Between 1 and 2 years: 314,079; Between 2 and 5 years: 732,974) is 1,563,851.",
+      "page": 204,
+      "id": "maturity_schedule_footing_2019",
+      "_run": "run_15"
+    },
+    {
+      "actual": 327617,
+      "id": "cash_flow_generated_ops_note_tie",
+      "page": 150,
+      "expected": 317102,
+      "category": "note_ties",
+      "description": "Net cash generated from operations in the Consolidated Cash Flow Statement (327,617) does not tie to the reconciliation in Note 31(a) (317,102). Using the statement value also causes a footing error in the net cash outflow subtotal.",
+      "_run": "run_15"
+    },
+    {
+      "category": "note_ties",
+      "page": 150,
+      "description": "Interim dividend amount in Note 8 (15,962) does not tie to the amount shown in the Consoldiated Statement of Changes in Equity and Note 41(a) (10,962).",
+      "expected": 10962,
+      "actual": 15962,
+      "id": "interim_dividend_note_8_mismatch",
+      "_run": "run_15"
+    },
+    {
+      "id": "p_and_l_currency_label_error",
+      "page": 143,
+      "description": "The currency header for the 2019 column in the Consolidated Profit and Loss Account is incorrectly labeled 'HK$·000', whereas the rest of the report and the 2018 comparative column are in 'US$·000'.",
+      "category": "presentation",
+      "_run": "run_15"
+    },
+    {
+      "description": "The 'Group geographical market turnover' pie chart labels are incorrectly assigned. Rest of World is shown as 18% (should be 6% per Note 3) and Europe is shown as 6% (should be 18% per Note 3). Asia (11%) also varies slightly from Note 3 (12%).",
+      "category": "presentation",
+      "page": 6,
+      "id": "pie_chart_labels_swapped_summary",
+      "_run": "run_15"
+    },
+    {
+      "actual": 11601937,
+      "expected": 11463312,
+      "id": "p_and_l_gross_profit_footing_2019",
+      "category": "cross_footing",
+      "description": "Turnover on the 2019 Consolidated Profit and Loss account is listed as 11,601,937. Deducting Cost of Sales (10,221,721) gives 1,380,216, but Gross Profit is listed as 1,241,591. Turnover derived from GP is 11,463,312. Note 3 states turnover is 11,413,312.",
+      "page": 143,
+      "_run": "run_15"
+    },
+    {
+      "id": "pl_header_year_error",
+      "description": "Header for Consolidated Profit and Loss Account incorrectly states 'For the year ended 31 December 2018'. Based on the content and other statements, it should be 2019.",
+      "page": 143,
+      "category": "presentation",
+      "_run": "run_22"
+    },
+    {
+      "id": "pl_currency_label_error_2019",
+      "description": "The 2019 column header in the Consolidated Profit and Loss Account is labeled 'HK$000'. The report's functional/presentation currency is US dollar (Note 1.4(A)), and all other 2019 columns are in US$'000. Additionally, the figures themselves represent US dollar values shown elsewhere.",
+      "category": "presentation",
+      "page": 143,
+      "_run": "run_22"
+    },
+    {
+      "description": "Turnover in the Profit and Loss Account (11,601,937) does not tie to the Segment Information in Note 3 (11,413,312).",
+      "page": 143,
+      "actual": 11601937,
+      "id": "pl_turnover_note_tie_error",
+      "expected": 11413312,
+      "category": "note_ties",
+      "_run": "run_22"
+    },
+    {
+      "page": 143,
+      "description": "The label 'Gross loss' is used for positive values (1,241,591 in 2019 and 1,305,338 in 2018). It should likely be labeled 'Gross profit'.",
+      "category": "presentation",
+      "id": "pl_gross_loss_label_error",
+      "_run": "run_22"
+    },
+    {
+      "category": "cross_footing",
+      "page": 143,
+      "expected": 1380216,
+      "description": "Gross profit calculation: Turnover 11,601,937 minus Cost of sales (10,221,721) equals 1,380,216, but the document shows 1,241,591..",
+      "actual": 1241591,
+      "id": "pl_gross_profit_math_error",
+      "_run": "run_22"
+    },
+    {
+      "page": 143,
+      "category": "cross_footing",
+      "id": "pl_total_margin_math_error",
+      "description": "Total margin calculation: Gross loss (reported as positive) 1,241,591 plus Other income 27,745 equals 1,269,336, but the document shows 1,219,336.",
+      "actual": 1219336,
+      "expected": 1269336,
+      "_run": "run_22"
+    },
+    {
+      "actual": 15962,
+      "description": "In Note 8 (Dividends), the 2019 interim dividend is listed as 15,962, and the final dividend as Nil. The reported total is 10,962, while the mathematical sum is 15,962. Note 41(a) confirms the actual interim dividend paid was 10,962.",
+      "page": 181,
+      "id": "div_interim_value_error",
+      "category": "cross_footing",
+      "expected": 10962,
+      "_run": "run_22"
+    },
+    {
+      "actual": 1593391,
+      "id": "lt_liabilities_maturity_math_error",
+      "category": "cross_footing",
+      "page": 204,
+      "expected": 1618391,
+      "description": "In Note 28 (Maturity of financial liabilities), the sum of components (516,798 + 314,079 + 732,974 + 54,540) equals 1,618,391, but the reported total is 1,593,391.",
+      "_run": "run_22"
+    },
+    {
+      "page": 209,
+      "description": "The summary rollforward table for net deferred tax (assets)/liabilities contains numerous values that do not tie to the detailed asset/liability component tables below it. For example, the 1 Jan 2019 balance is shown as (13,591), but the detail confirms it should be 13,951 (asset). The exchange difference is shown as 631, but the detail shows (631).",
+      "category": "rollforward",
+      "id": "deferred_tax_summary_rollforward_error",
+      "_run": "run_22"
+    },
+    {
+      "id": "segment_turnover_value_error",
+      "category": "presentation",
+      "description": "In Note 3, the Turnover for Supply Chain Solutions is reported as 88,344,820 under a column incorrectly labeled 'HK$000'. Based on total Services turnover of 9,999,701, this should be 8,834,482 in US$'000.",
+      "page": 177,
+      "expected": 8834482,
+      "actual": 88344820,
+      "_run": "run_22"
+    },
+    {
+      "expected": 11413312,
+      "description": "Turnover on the P&L (image 143) is US$11,601,937, but Note 3 (image 175) and and the Summary table (image 98) report US$11,413,312. Difference of US$188,625.",
+      "actual": 11601937,
+      "category": "note_ties",
+      "page": 143,
+      "id": "pl_turnover_note_mismatch",
+      "_run": "run_4"
+    },
+    {
+      "actual": 1241591,
+      "category": " cross_footing",
+      "page": 143,
+      "expected": 1380216,
+      "id": "pl_gp_math_error",
+      "description": "On the P&L (image 143), Turnover (11,601,937) minus Cost of sales (10,221,721) should equal Gross profit of 1,380,216, but US$1,241,591 is reported.",
+      "_run": "run_4"
+    },
+    {
+      "page": 146,
+      "expected": 2298948,
+      "description": "Intangible assets on the Balance Sheet (image 146) is US$2,373,252, but Note 11 (image 137) clearly states the 2019 net book amount is US$2,298,948. This note figure is consistently used in all other summaries (e.g. page 245).",
+      "category": "note_ties",
+      "id": "bs_intangible_mismatch",
+      "actual": 2373252,
+      "_run": "run_4"
+    },
+    {
+      "category": "note_ties",
+      "page": 147,
+      "actual": 1170520,
+      "description": "Reserves on the Balance Sheet (image 147) is US$1,170,520, but calculated from total attributable equity minus share capital (1,264,206 - 13,686) it should be US$1,250,520. This US$1,250,520 figure also matches the combined reserves on the SOCE (image 82).",
+      "expected": 1250520,
+      "id": "bs_reserves_mismatch",
+      "_run": "run_4"
+    },
+    {
+      "expected": 1563851,
+      "category": "cross_footing",
+      "page": 204,
+      "description": "In Note 28 maturity table (image 53), the subtotal 'Wholly repayable within 5 years' is US$1,538,851, but the sum of its components (516,798 + 314,079 + 732,974) is US$1,563,851. Mismatch of 25,000.",
+      "actual": 1538851,
+      "id": "note_28_maturity_sum_error",
+      "_run": "run_4"
+    },
+    {
+      "description": "Net cash generated from operations on the face of the Cash Flow Statement (image 134) is US$327,617, but the detailed reconciliation in Note 31(a) (image 223) shows the correct total is US$317,102. The statement also contains a math error as 327,617 minus taxes paid (1,129 + 35,119) does not equal the reported net operating outflow of 280,854.",
+      "category": "note_ties",
+      "actual": 327617,
+      "id": "cf_operating_total_mismatch",
+      "page": 150,
+      "expected": 317102,
+      "_run": "run_4"
+    },
+    {
+      "id": "dividend_note_math_error",
+      "page": 181,
+      "category": "cross_footing",
+      "actual": 10962,
+      "expected": 15962,
+      "description": "Note 8 Dividends (image 84) reports 2019 total dividends of US$10,962, but the only component listed (interim dividend) is US$15,962. The SOCE (image 82) confirms the correct figure is 10,962, making 15,962 a typo.",
+      "_run": "run_4"
+    },
+    {
+      "id": "pl_wrong_title_date",
+      "actual": 2018,
+      "page": 143,
+      "expected": 2019,
+      "description": "Consolidated Profit and Loss Account (image 143) is titled 'For the year ended 31 December 2018' despite 2019 being the current reporting year.",
+      "category": "presentation",
+      "_run": "run_4"
+    },
+    {
+      "page": 143,
+      "id": "pl_wrong_section_header",
+      "category": "presentation",
+      "description": "The Consolidated Profit and Loss Account (image 143) incorrectly labels the primary operations section as 'Discontinued Operations'. Based on the figures and Note 3, this section relates to 'Continuing Operations'.",
+      "_run": "run_4"
+    },
+    {
+      "page": 143,
+      "category": "presentation",
+      "id": "pl_gross_loss_label_error_sign",
+      "description": "The P&L (image 143) uses the label 'Gross loss' for figures clearly representing gross profits (Turnover exceeds Cost of Sales in both columns).",
+      "_run": "run_4"
+    },
+    {
+      "actual": 2018,
+      "description": "Consolidated Balance Sheet face (image 19 / page 146) has both comparative columns headers mislabeled. The 2019 column is labeled '2018'.",
+      "id": "bs_header_date_error_2019",
+      "expected": 2019,
+      "category": "presentation",
+      "page": 146,
+      "_run": "run_4"
+    },
+    {
+      "page": 180,
+      "actual": 4511,
+      "category": " presentation",
+      "expected": 4511,
+      "id": "auditor_remuneration_sign_error",
+      "description": "Page 180 (image 59) Note 4 reports total auditor remuneration as (4,511) in brackets, implying a credit/income, whereas the comparative is positive 6,670. Expense items in the charging section should represent positives.",
+      "_run": "run_4"
+    },
+    {
+      "description": "Note 1.1(A) (page 152 / image 187) incorrectly identifies standard HKFRS 17 as 'Leases'. HKFRS 16 is 'Leases', while HKFRS 17 is 'Insurance Contracts'.",
+      "expected": 16,
+      "page": 152,
+      "category": " presentation",
+      "actual": 17,
+      "id": "accounting_std_typo_note_1_1",
+      "_run": "run_4"
+    },
+    {
+      "page": 177,
+      "description": "Note 3 supplementary analysis (page 177 / image 177) head labels the column as 'HK$000' while the figures correspond to the US$'000 data reported throughout the rest of the note and primary statements.",
+      "id": "note_3_wrong_currency_header",
+      "category": "presentation",
+      "_run": "run_4"
+    },
+    {
+      "page": 192,
+      "description": "Note 21 top table (image 41 / page 192) is titled 'Trade and Other Payables' but clearly contains receivable data matching the Balance Sheet asset items.",
+      "id": "note_21_title_label_error",
+      "category": "presentation",
+      "_run": "run_4"
+    },
+    {
+      "id": "def_tax_opening_mismatch_bs",
+      "actual": 13591,
+      "category": "rollforward_mismatch",
+      "page": 209,
+      "expected": 13951,
+      "description": "Note 30 movement table (image 46 / page 209) opening balance for 2019 is US$(13,591), but the sum of BS asset/liabilities at 31 Dec 2018 (image 19/112) is a net US$(13,951) [15,644 Cr - 1,693 Dr]. Mismatch of US$360.",
+      "_run": "run_4"
+    },
+    {
+      "id": "restatement_table_header_date_error_1jan2019",
+      "actual": 2019,
+      "description": "Note 1.1(A) (image 209 / page 154) lists an opening balance sheet impact table titled 'As at 1 January 2019'. Based on the restated figures (e.g. PPE US$187,943), this table describes 1 January 2018. 1 January 2019 should match 31 December 2018 restated balances.",
+      "page": 154,
+      "expected": 2018,
+      "category": "presentation",
+      "_run": "run_4"
+    },
+    {
+      "id": "cf_net_cash_gen_ops_mismatch",
+      "description": "Line 'Net cash generated from operations' for 2019 is reported as 327,617, but Note 31(a) on page 211 shows the value should be 317,102. The total net cash inflow from operating activities of 280,854 also requires the 317,102 figure to foot (317,102 - 1,129 - 35,119 = 280,854).",
+      "expected": 317102,
+      "category": "note_ties",
+      "actual": 327617,
+      "page": 150,
+      "_run": "run_17"
+    },
+    {
+      "description": "The header of the Consolidated Profit and Loss Account incorrectly states 'For the year ended 31 December 2018' instead of 2019.",
+      "id": "pl_header_year_error",
+      "expected": 2019,
+      "page": 143,
+      "category": "presentation",
+      "actual": 2018,
+      "_run": "run_17"
+    },
+    {
+      "page": 143,
+      "actual": "HK$000",
+      "expected": "US$'000",
+      "category": "presentation",
+      "description": "The 2019 column header in the Consolidated Profit and Loss Account is labeled 'HK$000', but the figures are presented in and stated to be 'US$000' throughout the rest of the report and in Note 1.4(A).",
+      "id": "pl_unit_label_error",
+      "_run": "run_17"
+    },
+    {
+      "actual": "Discontinued Operations",
+      "page": 143,
+      "id": "pl_section_heading_error_cont_ops",
+      "category": "presentation",
+      "description": "The section heading 'Discontinued Operations' is erroneously applied to the first half of the Profit and Loss Account which contains Continuing Operations data (Turnover, Cost of Sales, Gross Profit, etc.).",
+      "expected": "Continuing Operations",
+      "_run": "run_17"
+    },
+    {
+      "description": "2019 Turnover is reported as 11,601,937 on the face of the P&L, but Note 3 on page 175 shows total turnover of 11,413,312. If the Note 3 figure is used with the reported Cost of Sales, the math ties to the reported Total Margin.",
+      "expected": 11413312,
+      "page": 143,
+      "category": "note_ties",
+      "actual": 11601937,
+      "id": "pl_turnover_note_mismatch",
+      "_run": "run_17"
+    },
+    {
+      "actual": "Gross loss",
+      "page": 143,
+      "category": "presentation",
+      "expected": "Gross profit",
+      "id": "pl_gross_profit_label_error",
+      "description": "The line item for the difference between Turnover and Cost of Sales is labeled 'Gross loss' but the reported values (1,241,591 and 1,305,338) are positive, representing Gross Profit.",
+      "_run": "run_17"
+    },
+    {
+      "page": 143,
+      "expected": 1191591,
+      "actual": 1241591,
+      "category": "cross_footing",
+      "description": "Gross Profit (labeled 'Gross loss') for 2019 is reported as 1,241,591. However, using the correct Turnover from Note 3 (11,413,312) minus Cost of Sales (10,221,721) results in 1,191,591. Using the erroneous face Turnover (11,601,937) minus COGS results in 1,380,216. Thus the reported Gross Profit figure is mathematically incorrect regardless of which Turnover value is used.",
+      "id": "pl_gross_profit_math_error_2019",
+      "_run": "run_17"
+    },
+    {
+      "expected": 2019,
+      "id": "bs_column_header_year_error",
+      "page": 146,
+      "description": "The first data column header on the Balance Sheet is labeled '2018' instead of '2019'.",
+      "category": "presentation",
+      "actual": 2018,
+      "_run": "run_17"
+    },
+    {
+      "description": "The first section of the Balance Sheet assets is incorrectly headed 'Non-current liabilities' instead of 'Non-current assets'.",
+      "actual": "Non-current liabilities",
+      "page": 146,
+      "category": "presentation",
+      "id": "bs_assets_heading_error",
+      "expected": "Non-current assets",
+      "_run": "run_17"
+    },
+    {
+      "actual": 2373252,
+      "id": "bs_intangibles_note_mismatch",
+      "expected": 2298948,
+      "page": 146,
+      "description": "2019 Intangible assets are reported as 2,373,252 on the face of the Balance Sheet, but the rollforward in Note 11 on page 222 correctly foots to a closing balance of 2,298,948. The subtotal for Non-current assets (2,940,021) also requires the Note 11 figure to foot correctly.",
+      "category": "note_ties",
+      "_run": "run_17"
+    },
+    {
+      "page": 147,
+      "category": "note_ties",
+      "expected": 1250520,
+      "id": "bs_reserves_sce_mismatch",
+      "actual": 1170520,
+      "description": "The 'Reserves' line on the Balance Sheet for 2019 is reported as 1,170,520. However, adding the components from the SCE on page 148 (Share Premium 760,754 + Other Reserves 46,184 + Retained Earnings 443,582) totals 1,250,520. The gap is exactly 80,000.",
+      "_run": "run_17"
+    },
+    {
+      "expected": 1184206,
+      "category": "cross_footing",
+      "description": "The total 'Shareholders' funds attributable to the Company's Shareholders' for 2019 is reported as 1,264,206. However, summing the preceding lines (Share capital 13,686 + Reserves 1,170,520) results in 1,184,206. This indicates a cross-footing error on the statement face. If the correct Reserves figure (1,250,520) is used, the total foots to the reported 1,264,206.",
+      "page": 147,
+      "id": "bs_equity_cross_footing_error_2019",
+      "actual": 1264206,
+      "_run": "run_17"
+    },
+    {
+      "expected": 10962,
+      "page": 181,
+      "id": "note_8_interim_div_mismatch",
+      "actual": 15962,
+      "category": "note_ties",
+      "description": "Interim dividend paid for 2019 is reported as 15,962 in Note 8, but the SCE on page 148 and the Report of the Directors on pages 124 and 159 correctly state it as 10,962 (equivalent to US$11 million).",
+      "_run": "run_17"
+    },
+    {
+      "actual": 22823,
+      "category": "cross_footing",
+      "page": 207,
+      "description": "The components of 2018 Plan assets (9,549 + 2,330 + 516 + 909 + 44 + 5,453 + 2,854 + 557 + 438 + 19 + 154) sum to 22,823, but the reported total is 23,833.",
+      "expected": 23833,
+      "id": "plan_assets_2018_math_error",
+      "_run": "run_23"
+    },
+    {
+      "id": "total_margin_scs_percentage_typo",
+      "expected": 44,
+      "page": 15,
+      "actual": 14,
+      "category": "presentation",
+      "description": "The text states SCS accounted for 14% of total margin, but the donut chart correctly shows 44%. Calculation (534/1219) confirms 44%.",
+      "_run": "run_23"
+    },
+    {
+      "id": "bs_reserves_tie_in_error",
+      "expected": 1250520,
+      "page": 147,
+      "category": "note_ties",
+      "description": "Reserves line on Balance Sheet (1,170,520) does not tie to sum of reserve components in Note 26/SOCE (760,754 + 46,184 + 443,582 = 1,250,520). The calculated Shareholders funds subtotal (1,264,206) assumes the higher value.",
+      "actual": 1170520,
+      "_run": "run_23"
+    },
+    {
+      "expected": 2298948,
+      "actual": 2373252,
+      "id": "bs_intangible_assets_tie_in_error_2019",
+      "category": "note_ties",
+      "page": 146,
+      "description": "Intangible assets on Balance Sheet (2,373,252) does not tie to Note 11 (2,298,948). The Balance Sheet non-current assets subtotal (2,940,021) only correctly cross-foots if the Note 11 value is used.",
+      "_run": "run_23"
+    },
+    {
+      "actual": 6929,
+      "category": "cross_footing",
+      "expected": 6939,
+      "description": "The total number of active factories reported (6,929) does not match the sum of regions (4,935 + 891 + 649 + 270 + 83 + 65 + 46 = 6,939).",
+      "id": "active_factories_sum_error",
+      "page": 94,
+      "_run": "run_23"
+    },
+    {
+      "actual": 612931,
+      "id": "cash_rollforward_opening_balance_typo",
+      "category": " presentation",
+      "expected": 612391,
+      "page": 151,
+      "description": "Continuing Operations cash at 1 January 2019 is labeled as 612,931 but should be 612,391 to match the prior year closing balance and ensure the row total (612,391 + 0 = 612,391) cross-foots correctly.",
+      "_run": "run_23"
+    },
+    {
+      "page": 154,
+      "actual": 2019,
+      "expected": 2018,
+      "id": "hkfrs16_impact_table_date_error_jan1",
+      "category": "presentation",
+      "description": "Table header is dated 'As at 1 January 2019' but correctly contains restated balances from 1 January 2018 (e.g. PPE 187,943 and ROU assets 421,027). The 31 Dec 2018 restated balances (which would be 1 Jan 2019) are different.",
+      "_run": "run_23"
+    },
+    {
+      "category": "presentation",
+      "page": 177,
+      "id": "scs_turnover_extra_digit_typo",
+      "description": "SCS Turnover for 2019 is reported as 88,344,820. This is a typo (extra digit) for 8,834,482, as shown by bar charts (8,834M) and required to cross-foot the segment total (9,999,701). Also, the column header incorrectly says 'HK$000' while underlying figures are USD.",
+      "actual": 88344820,
+      "expected": 8834482,
+      "_run": "run_23"
+    },
+    {
+      "actual": 1443413,
+      "expected": 1250520,
+      "category": "presentation",
+      "description": "Reserves in 10-year summary (1,443,413) is inconsistent with Balance Sheet (1,170,520 or 1,250,520) as it appears to include Non-Controlling Interest (192,893), which is usually a separate component of equity.",
+      "page": 245,
+      "id": "ten_year_summary_reserves_classification_error",
+      "_run": "run_23"
+    },
+    {
+      "category": "note_ties",
+      "id": "cash_flow_operating_tie_in_error",
+      "description": "Net cash generated from operations (327,617) does not tie to Note 31(a) (317,102). The Operating activities subtotal (280,854) only cross-foots if the lower value is used.",
+      "expected": 317102,
+      "page": 150,
+      "actual": 327617,
+      "_run": "run_23"
+    },
+    {
+      "expected": 2298948,
+      "description": "Intangible assets on Consolidated Balance Sheet (p. 130) of US$2,373,252 does not tie to the detailed breakdown in Note 11 (p. 184/225) which totals US$2,298,948. The US$2,298,948 value is correctly used in Note 3 (p. 177) and the Summary (p. 245).",
+      "actual": 2373252,
+      "id": "intangibles_bs_note_mismatch",
+      "category": "note_ties",
+      "page": 130,
+      "_run": "run_2"
+    },
+    {
+      "expected": 15962,
+      "id": "dividend_total_crossfoot_error_2019",
+      "description": "In Note 8 Dividends (p. 181), the sum of Interim dividend (US$15,962) and Final dividend (US$Nil) is incorrectly subtotaled as US$10,962.",
+      "category": "cross_footing",
+      "page": 181,
+      "actual": 15962,
+      "_run": "run_2"
+    },
+    {
+      "expected": 1380216,
+      "category": "cross_footing",
+      "actual": 1241591,
+      "id": "pl_gross_profit_math_error_2019",
+      "description": "On page 143 Consolidated P&L, 2019 Turnover (11,601,937) minus Cost of sales (10,221,721) equals 1,380,216, but is printed as 1,241,591.",
+      "page": 143,
+      "_run": "run_2"
+    },
+    {
+      "expected": 1269336,
+      "description": "On page 143 Consolidated P&L, 2019 Gross loss (1,241,591) plus Other income (27,745) equals 1,269,336, but the 'Total margin' subtotal is printed as 1,219,336.",
+      "id": "pl_total_margin_crossfoot_error_2019",
+      "category": "cross_footing",
+      "actual": 1241591,
+      "page": 143,
+      "_run": "run_2"
+    },
+    {
+      "id": "turnover_pl_segment_note_mismatch_2019",
+      "category": "note_ties",
+      "description": "Turnover for 2019 on page 143 P&L (US$11,601,937) does not tie to turnover disclosed in Note 3 Segment Information (p. 175/147) of US$11,413,312.",
+      "actual": 11601937,
+      "expected": 11413312,
+      "page": 143,
+      "_run": "run_2"
+    },
+    {
+      "page": 143,
+      "id": "pl_title_date_incorrect",
+      "category": "presentation",
+      "description": "The Consolidated Profit and Loss Account on page 143 is incorrectly titled \"For the year ended 31 December 2018\" instead of 2019.",
+      "_run": "run_2"
+    },
+    {
+      "description": "The top section of the Consolidated Profit and Loss Account on page 143 is incorrectly labeled \"Discontinued Operations\" instead of \"Continuing Operations\".",
+      "id": "pl_section_label_incorrect",
+      "category": "presentation",
+      "page": 143,
+      "_run": "run_2"
+    },
+    {
+      "category": "presentation",
+      "page": 143,
+      "id": "pl_gross_loss_label_misstatement",
+      "description": "The Gross Profit line on page 143 is labeled \"Gross loss\" for 2019 even though the value is positive.",
+      "_run": "run_2"
+    },
+    {
+      "category": "presentation",
+      "actual": 88344820,
+      "page": 177,
+      "id": "supplementary_scs_turnover_typo_2019",
+      "expected": 8834482,
+      "description": "In Note 3 Supplementary analysis (p. 177), Supply Chain Solutions turnover for 2019 is printed as 88,344,820, which is ten times the actual value of 8,834,482 used in the rest of the report (e.g. p. 175). It's also labeled as HK$000 while the Logistics line in the same sum is in US$ scale.",
+      "_run": "run_2"
+    },
+    {
+      "category": "presentation",
+      "expected": 4511,
+      "page": 180,
+      "description": "In Note 4 (p. 180), the total auditor remuneration for 2019 is shown in brackets (US$(4,511)), which typically represents income or a credit, despite the components being positive expenses and the prior year comparison (US$6,670) being shown without brackets.",
+      "id": "auditor_remuneration_sign_inconsistency_2019",
+      "actual": 4511,
+      "_run": "run_2"
+    },
+    {
+      "category": "presentation",
+      "description": "Statement title date is 'For the year ended 31 December 2018' but the report belongs to the 2019 Annual Report and shows 2019 data columns.",
+      "id": "pl_statement_date_error_2019",
+      "page": 143,
+      "_run": "run_8"
+    },
+    {
+      "page": 143,
+      "id": "pl_currency_label_error_2019",
+      "description": "Currency label for 2019 column is 'HK$000' but all other financial statements and notes show US$'000. Data values confirm this is USD.",
+      "category": "presentation",
+      "_run": "run_8"
+    },
+    {
+      "id": "pl_section_header_label_error_2019",
+      "page": 143,
+      "category": "presentation",
+      "description": "First internal section header is 'Discontinued Operations' but the content below it relates to 'Continuing Operations'. 'Discontinued Operations' appears again correctly at the bottom of the statement.",
+      "_run": "run_8"
+    },
+    {
+      "page": 143,
+      "expected": 11413312,
+      "category": "note_ties",
+      "actual": 11601937,
+      "id": "pl_turnover_note_tie_error_2019",
+      "description": "Turnover for 2019 is US$11,601,937 but Note 3 (Segment Information) shows US$11,413,312. US$11,413,312 is also used in the summary sections and Note 3 geographical breakdown.",
+      "_run": "run_8"
+    },
+    {
+      "actual": 1241591,
+      "page": 143,
+      "description": "Math error in Gross loss (which should be Profit): 11,601,937 (Turnover) - 10,221,721 (Cost of sales) = 1,380,216, but US$1,241,591 is reported. US$1,241,591 also fails to sum with Other income (US$27,745) to the reported Total margin (US$1,219,336).",
+      "expected": 1380216,
+      "category": "cross_footing",
+      "id": "pl_gross_profit_cross_foot_2019",
+      "_run": "run_8"
+    },
+    {
+      "page": 143,
+      "category": "presentation",
+      "description": "Positive value of 1,241,591 is labeled as 'Gross loss' instead of 'Gross profit' or 'Gross margin'.",
+      "id": "pl_gross_loss_label_error_2019",
+      "_run": "run_8"
+    },
+    {
+      "id": "bs_assets_header_label_error_2019",
+      "description": "Section header 'Non-current liabilities' is incorrectly used for the Assets section of the Balance Sheet.",
+      "page": 146,
+      "category": "presentation",
+      "_run": "run_8"
+    },
+    {
+      "description": "Intangible assets value is US$2,373,252 but Note 11 (Intangible Assets) rollforward correctly concludes with a closing net book amount of US$2,298,948. US$2,298,948 is also used in the Ten-Year Financial Summary and correctly sums to the BS non-current assets subtotal. US$2,373,252 appears to be a typo.",
+      "category": "note_ties",
+      "actual": 2373252,
+      "id": "bs_intangibles_note_tie_error_2019",
+      "page": 146,
+      "expected": 2298948,
+      "_run": "run_8"
+    },
+    {
+      "actual": 1170520,
+      "expected": 1250520,
+      "id": "bs_reserves_cross_foot_error_2019",
+      "page": 147,
+      "description": "Row item 'Reserves' (US$1,170,520) plus 'Share capital' (US$13,686) equals US$1,184,206, but the reported subtotal 'Shareholders\\' funds attributable to the Company\\'s Shareholders' is US$1,264,206. Total equity in Note 26 also does not reconcile to 1,170,520.",
+      "category": "cross_footing",
+      "_run": "run_8"
+    },
+    {
+      "id": "cf_net_op_cash_note_tie_2019",
+      "category": "note_ties",
+      "page": 132,
+      "description": "'Net cash generated from operations' is reported as US$327,617, but the reconciliation in Note 31(a) correctly sums to US$317,102. The subsequent subtotal on the Cash Flow statement (280,854) is correctly derived from the Note 31(a) value (317,102 - 1,129 - 35,119 = 280,854). US$327,617 appears to be a typo.",
+      "actual": 327617,
+      "expected": 317102,
+      "_run": "run_8"
+    },
+    {
+      "description": "Label 'Net cash outflow from operating activities' is used for positive (inflow) values of US$280,854 (2019) and US$368,171 (2018).",
+      "page": 132,
+      "category": "presentation",
+      "id": "cf_op_cash_label_error_2019",
+      "_run": "run_8"
+    },
+    {
+      "expected": 10962,
+      "page": 98,
+      "actual": 15962,
+      "category": "cross_footing",
+      "id": "note8_dividends_cross_foot_2019",
+      "description": "In Note 8, interim dividend paid is listed as US$15,962, but it does not sum to the reported total US$10,962. US$10,962 is the correct value used in Note 41(a), the Consolidated Cash Flow statement, and the Directors\\' report.",
+      "_run": "run_8"
+    },
+    {
+      "category": "cross_footing",
+      "description": "In the supplementary analysis table, Supply Chain Solutions turnover is reported as US$88,344,820, which is ten times the correct value shown in related notes (approx. US$8.8 billion). This value fails to sum with other components to the reported total services turnover of US$9,999,701.",
+      "actual": 88344820,
+      "expected": 8834482,
+      "page": 134,
+      "id": "note3_scs_turnover_cross_foot_2019",
+      "_run": "run_8"
+    },
+    {
+      "actual": 1173277,
+      "category": " cross_footing",
+      "id": "note3_logistics_note_tie_2019",
+      "expected": 1152363,
+      "page": 134,
+      "description": "In Note 3 supplementary analysis (page 134), Logistics Services turnover is US$1,173,277, but in the Note 3 external customer turnover table (page 221) it is US$1,152,363. The higher value matches the results summary on page 211.",
+      "_run": "run_8"
+    },
+    {
+      "id": "sum_infographic_labels_swapped_2019",
+      "category": "presentation",
+      "page": 236,
+      "description": "The Turnover by Market infographic labels for USA (18%) and Europe (65%) are swapped relative to the data in Note 3 (USA US$7.4 billion / 65%, Europe US$2.0 billion / 18%).",
+      "_run": "run_8"
+    },
+    {
+      "id": "note1_table_date_error_2019",
+      "page": 192,
+      "description": "Table title is 'As at 1 January 2019' but it contains transition balance data for 1 January 2018 (matching the BS restated opening 2018 column). The actual restated opening 2019 balances are correctly shown in Note 1.1(A) on page 149 and Notes 12/13.",
+      "category": "presentation",
+      "_run": "run_8"
+    },
+    {
+      "page": 146,
+      "description": "Page 146 Balance Sheet: The column header for the current year (2019) is incorrectly labeled 'As at 31 December 2018'. This column contains 2019 values (e.g., Cash balance of 932,167, which ties to Note 22 for 2019).",
+      "category": "presentation",
+      "id": "bs_2019_header_year_error",
+      "_run": "run_16"
+    },
+    {
+      "page": 146,
+      "id": "bs_2018_restated_label_missing",
+      "category": "presentation",
+      "description": "Page 146 Balance Sheet: The comparative column '2018 US$\\'000' is missing the '(Restated)' label, which is required as Note 1 and MD&A p13 confirm prior year comparatives were restated for HKFRS 16. The label correctly appears on other statements and summaries.",
+      "_run": "run_16"
+    },
+    {
+      "actual": 2373252,
+      "category": "note_ties",
+      "description": "Page 146 Balance Sheet: Intangible Assets for 2019 is reported as 2,373,252. Note 11 detail on page 184 and the Ten-Year Financial Summary on page 245 report the correct total as 2,298,948. Factor of mismatch: 74,304.",
+      "page": 146,
+      "id": "intangible_assets_note_tie_mismatch_2019",
+      "expected": 2298948,
+      "_run": "run_16"
+    },
+    {
+      "id": "bs_reserves_crossfoot_error_2019",
+      "actual": 1170520,
+      "page": 147,
+      "expected": 1250520,
+      "category": "cross_footing",
+      "description": "Page 147 Balance Sheet: Under 'Financed by', the 'Reserves' row for 2019 shows 1,170,520. However, the sum of its reported subtotal components (Shareholders' funds subtotal of 1,264,206 minus Share capital of 13,686) is 1,250,520. Furthermore, the column footing is broken: reported Share Capital (13,686) + Reserves (1,170,520) = 1,184,206, which does not match the printed subtotal of 1,264,206.",
+      "_run": "run_16"
+    },
+    {
+      "id": "pl_2019_hks_label_error",
+      "category": "presentation",
+      "page": 143,
+      "description": "Page 143 Consolidated Profit and Loss Account: The column header for 2019 is labeled 'HK$000', but the reporting currency confirmed in Note 1.4(A) and used throughout the rest of the report is US$. The values themselves represent US$'000 (e.g., turnover of ~11.4 billion).",
+      "_run": "run_16"
+    },
+    {
+      "category": "presentation",
+      "description": "Page 143 Consolidated Profit and Loss Account: The table is incorrectly placed under a section header 'Discontinued Operations'. The content actually represents 'Continuing Operations', as evidenced by the restated 2018 comparative (12,700,744) and the 'Profit... from Continuing Operations' subtotal at the bottom.",
+      "id": "pl_section_header_error_continuing_discontinued",
+      "page": 143,
+      "_run": "run_16"
+    },
+    {
+      "expected": 11413312,
+      "page": 143,
+      "id": "turnover_mismatch_pl_vs_note3",
+      "category": "note_ties",
+      "actual": 11601937,
+      "description": "Page 143 Consolidated Profit and Loss Account: Turnover for 2019 is reported as 11,601,937. However, Note 3 (p175), the MD&A results table (p13), and the Ten-Year Summary (p244) all report the correct value as 11,413,312.",
+      "_run": "run_16"
+    },
+    {
+      "actual": 15962,
+      "expected": 10962,
+      "id": "dividend_note_interim_crossfoot_error_2019",
+      "page": 181,
+      "description": "Page 181 Note 8 Dividends: The Interim paid dividend for 2019 is incorrectly listed as 15,962. The bottom total row for 2019 is correct at 10,962 (matching the US$11 million payout described on p184 and shown in the Equity Statement p118). 15,962 + 0 does not equal 10,962.",
+      "category": "cross_footing",
+      "_run": "run_16"
+    },
+    {
+      "expected": 545669,
+      "id": "related_party_ageing_footing_error_2019",
+      "actual": 539876,
+      "page": 192,
+      "category": "cross_footing",
+      "description": "Page 192 Note 19(a): The components of the trade related companies overdue ageing (Not yet due 256,330 + 91-180 days 147,946 + 181-365 days 141,393) sum to 545,669, but the total reported in the table is 539,876.",
+      "_run": "run_16"
+    },
+    {
+      "actual": 1538851,
+      "id": "note28_maturity_subtotal_calculation_error",
+      "description": "Page 204 Note 28: The subtotal 'Wholly repayable within 5 years' is reported as 1,538,851. Summing the components above it (Within 1 year 516,798 + 1-2 years 314,079 + 2-5 years 732,974) results in 1,563,851.",
+      "expected": 1563851,
+      "page": 204,
+      "category": "cross_footing",
+      "_run": "run_16"
+    },
+    {
+      "description": "Page 209 Note 30: The 'At 1 January' opening balance for 2019 in the movement summary table is (13,591) asset. However, the details on pages 209 and 210 show Opening Assets of 37,684 and Opening Liabilities of 23,733, resulting in a net asset of (13,951). Use of the summary figure (13,591) prevents the summary table from footing correctly to the (24,953) ending balance.",
+      "expected": -13951,
+      "actual": -13591,
+      "id": "def_tax_opening_rollforward_mismatch",
+      "category": "rollforward",
+      "page": 209,
+      "_run": "run_16"
+    },
+    {
+      "page": 178,
+      "description": "Page 178 Note 31(a): Net cash generated from operations is reconciled to 317,102. The primary Consolidated Cash Flow Statement on Page 150 reports 327,617 for this line item.",
+      "actual": 317102,
+      "expected": 327617,
+      "id": "cash_flow_reconciliation_note_tie_error_2019",
+      "category": "note_ties",
+      "_run": "run_16"
+    },
+    {
+      "category": "presentation",
+      "description": "Page 143 Consolidated Profit and Loss Account: The row label 'Gross loss' is used, even though the value reported (1,241,591) is a profit (Turnover - COS + Other income = Total Margin of 1,219,336). The 2018 comparative is also correctly profit but labeled as 'Gross loss'.",
+      "id": "pl_gross_loss_label_error",
+      "page": 143,
+      "_run": "run_16"
+    },
+    {
+      "expected": 11413312,
+      "id": "pl_turnover_note_tie_failure",
+      "description": "Turnover for 2019 on page 143 (Consolidated Profit and Loss Account) is printed as 11,601,937 US$'000, which fails to tie to Note 3 (Segment Information) on page 175 where total turnover is reported as 11,413,312 US$'000.",
+      "category": "note_ties",
+      "page": 143,
+      "actual": 11601937,
+      "_run": "run_24"
+    },
+    {
+      "id": "pl_cross_footing_gp_mismatch",
+      "page": 143,
+      "description": "On page 143, Turnover (11,601,937) minus Cost of sales (10,221,721) equals 1,380,216, but the 'Gross loss' row shows 1,241,591. Even using the correct turnover from Note 3 (11,413,312), the gross profit should be 1,191,591.",
+      "category": "cross_footing",
+      "actual": 1241591,
+      "expected": 1191591,
+      "_run": "run_24"
+    },
+    {
+      "description": "On page 150 (Consolidated Cash Flow Statement), Net cash generated from operations is 327,617 US$'000, which does not match the reconciliation in Note 31(a) on page 211 where the value is 317,102 US$'000.",
+      "expected": 317102,
+      "actual": 327617,
+      "category": "note_ties",
+      "id": "cf_op_cash_face_vs_note_mismatch",
+      "page": 150,
+      "_run": "run_24"
+    },
+    {
+      "category": "cross_footing",
+      "expected": 291369,
+      "actual": 280854,
+      "id": "cf_op_subtotal_cross_footing",
+      "page": 150,
+      "description": "On page 150, the subtotal 'Net cash outflow from operating activities' of 280,854 is calculated incorrectly based on the values above it: 327,617 - 1,129 - 35,119 = 291,369. (Note: 280,854 is correctly calculated if using the Note 31a value 317,102).",
+      "_run": "run_24"
+    },
+    {
+      "category": "cross_footing",
+      "id": "note_28_maturity_cross_footing",
+      "expected": 1563851,
+      "description": "In Note 28 'Long-term Liabilities' on page 204, the subtotal 'Wholly repayable within 5 years' for 2019 is shown as 1,538,851, but the sum of its components (516,798 + 314,079 + 732,974) is 1,563,851.",
+      "page": 204,
+      "actual": 1538851,
+      "_run": "run_24"
+    },
+    {
+      "expected": 545669,
+      "category": "cross_footing",
+      "page": 239,
+      "description": "In Note 19 'Due from/(to) Related Companies' on page 239, the total trade amount due from other related companies is shown as 539,876, but the sum of the aging brackets (256,330 + 147,946 + 141,393) is 545,669.",
+      "id": "note_19_ageing_cross_footing",
+      "actual": 539876,
+      "_run": "run_24"
+    },
+    {
+      "id": "note_8_interim_dividend_mismatch",
+      "expected": 10962,
+      "category": "note_ties",
+      "actual": 15962,
+      "description": "In Note 8 'Dividends' on page 181 (Note Page 252), the 2019 Interim dividend is listed as 15,962 US$'000, which does not match Note 41(a) 'Reserve Movement of the Company' on page 230 where the value is 10,962 US$'000.",
+      "page": 252,
+      "_run": "run_24"
+    },
+    {
+      "actual": 10962,
+      "page": 252,
+      "expected": 15962,
+      "id": "note_8_total_math_error",
+      "category": "cross_footing",
+      "description": "In Note 8 'Dividends' on page 181 (Note Page 252), the 2019 column total is 10,962, but the sum of components (Interim 15,962 + Final 0) is 15,962. It appears 15,962 was a typo for 10,962.",
+      "_run": "run_24"
+    },
+    {
+      "description": "On the Consolidated Balance Sheet (page 146/182), the 2018 (Restated) Current liabilities total is 2,794,024, but the sum of components (37,809 + 5,355 + 1,736,817 + 585,897 + 30,267 + 272,951 + 129,464) is 2,798,560.",
+      "page": 146,
+      "id": "bs_2018_cl_cross_footing_error",
+      "actual": 2794024,
+      "category": "cross_footing",
+      "expected": 2798560,
+      "_run": "run_24"
+    },
+    {
+      "page": 147,
+      "actual": 1264206,
+      "expected": 1184206,
+      "category": "cross_footing",
+      "id": "bs_reserves_cross_footing_error",
+      "description": "On the Consolidated Balance Sheet (page 147/32), 'Shareholders' funds attributable to the Company's Shareholders' for 2019 is shown as 1,264,206, but the sum of its reported components ('Share capital' 13,686 and 'Reserves' 1,170,520) is 1,184,206.",
+      "_run": "run_24"
+    },
+    {
+      "page": 143,
+      "category": "presentation",
+      "description": "The title of the Consolidated Profit and Loss Account on page 143 incorrectly states 'For the year ended 31 December 2018', while the columns contain 2019 and 2018 data. It should be 'For the year ended 31 December 2019'.",
+      "id": "pl_title_year_incorrect",
+      "_run": "run_24"
+    },
+    {
+      "description": "The Consolidated Profit and Loss Account on page 143 has a column header '2019 HK$000', but all figures in that column are actually presented in US$'000 (as confirmed by the segment note and other statements).",
+      "id": "pl_currency_header_error",
+      "category": "presentation",
+      "page": 143,
+      "_run": "run_24"
+    },
+    {
+      "page": 150,
+      "description": "On the Consolidated Cash Flow Statement (page 150), the row for net operations cash is labeled 'Net cash outflow from operating activities', but the values (280,854 and 368,171) are positive inflows. The label should be 'Net cash inflow'.",
+      "id": "cf_label_op_outflow_incorrect",
+      "category": "presentation",
+      "_run": "run_24"
+    },
+    {
+      "id": "note_1_header_date_error_restated_bal",
+      "description": "In Note 1.1(A) on page 154, the table header for restated amounts incorrectly says 'As at 1 January 2019'. Based on the figures (PPE 187,943, Reserves 1,721,106), these correspond to values reported 'As at 1 January 2018 (Restated)' on the face of the Balance Sheet.",
+      "category": "presentation",
+      "page": 154,
+      "_run": "run_24"
+    },
+    {
+      "id": "pl_gross_loss_label_incorrect",
+      "category": "presentation",
+      "page": 143,
+      "description": "On page 143, the Gross Profit for 2019 is incorrectly labeled as 'Gross loss' despite being a positive value.",
+      "_run": "run_24"
+    },
+    {
+      "description": "Consolidated Profit and Loss Account 2019 Turnover (US$11,601,937k) does not tie to Note 3 Segment Information total Turnover (US$11,413,312k).",
+      "category": "note_ties",
+      "actual": 11601937,
+      "page": 143,
+      "expected": 11413312,
+      "id": "pl_turnover_note_tie_mismatch",
+      "_run": "run_7"
+    },
+    {
+      "description": "Consolidated Profit and Loss Account 2019 Gross Profit calculation error. Turnover (11,601,937) less Cost of Sales (10,221,721) should be 1,380,216, but 1,241,591 is shown.",
+      "expected": 1380216,
+      "actual": 1241591,
+      "page": 143,
+      "category": "cross_footing",
+      "id": "pl_gp_calc_error",
+      "_run": "run_7"
+    },
+    {
+      "page": 143,
+      "description": "Consolidated Profit and Loss Account 2019 Total Margin calculation error. Gross Profit (1,241,591) plus Other Income (27,745) should be 1,269,336, but 1,219,336 is shown.",
+      "id": "pl_total_margin_calc_error_2019",
+      "expected": 1269336,
+      "actual": 1219336,
+      "category": "cross_footing",
+      "_run": "run_7"
+    },
+    {
+      "page": 143,
+      "id": "pl_currency_header_error_2019",
+      "category": "presentation",
+      "description": "Consolidated Profit and Loss Account 2019 column header incorrectly uses 'HK$000' while the rest of the financial statements use 'US$000'. The values shown correlate to USD amounts.",
+      "_run": "run_7"
+    },
+    {
+      "category": "presentation",
+      "page": 143,
+      "id": "pl_heading_typo_total_operations_2019",
+      "description": "The sub-heading at the top of the Consolidated Profit and Loss Account incorrectly reads 'Discontinued Operations' instead of 'Continuing Operations'. The following numbers represent Total Continuing operations.",
+      "_run": "run_7"
+    },
+    {
+      "expected": 2298948,
+      "id": "bs_intangible_assets_tie_error_2019",
+      "category": "note_ties",
+      "actual": 2373252,
+      "page": 146,
+      "description": "Consolidated Balance Sheet 2019 Intangible Assets (US$2,373,252k) does not tie to Note 11 Intangible Assets closing balance (US$2,298,948k).",
+      "_run": "run_7"
+    },
+    {
+      "category": "cross_footing",
+      "actual": 2940021,
+      "description": "Consolidated Balance Sheet 2019 Non-current assets subtotal calculation error. The components shown (2,373,252 + 195,876 + 383,802 + 15 + 6,274 + 2,737 + 25,421 + 26,948) sum to 3,014,325, but 2,940,021 is shown. This is likely due to the tie error in the intangible asset line item.",
+      "id": "bs_noncurrent_assets_subtotal_error_2019",
+      "page": 146,
+      "expected": 3014325,
+      "_run": "run_7"
+    },
+    {
+      "description": "Consolidated Balance Sheet 2019 Shareholders' funds subtotal calculation error. Share capital (13,686) plus Reserves (1,170,520) sums to 1,184,206, but 1,264,206 is shown.",
+      "id": "bs_shareholders_funds_calc_error_2019",
+      "expected": 1184206,
+      "page": 147,
+      "category": "cross_footing",
+      "actual": 1264206,
+      "_run": "run_7"
+    },
+    {
+      "actual": 1170520,
+      "page": 147,
+      "expected": 1250520,
+      "category": "note_ties",
+      "description": "Consolidated Balance Sheet 2019 Reserves (US$1,170,520k) does not tie to Note 26 / Consolidated Statement of Changes in Equity (doc page 148) which shows components (Share Premium 760,754 + Other Reserves 46,184 + Retained Earnings 443,582) totaling US$1,250,520k. Discrepancy of US$80,000k.",
+      "id": "bs_reserves_tie_error_2019",
+      "_run": "run_7"
+    },
+    {
+      "page": 150,
+      "id": "cfs_cash_from_ops_tie_error_2019",
+      "description": "Consolidated Cash Flow Statement 2019 Net cash generated from operations (US$327,617k) does not tie to Note 31(a) reconciliation total (US$317,102k).",
+      "expected": 317102,
+      "category": "note_ties",
+      "actual": 327617,
+      "_run": "run_7"
+    },
+    {
+      "actual": 417535,
+      "category": "cross_footing",
+      "id": "note_31a_subtotal_calc_error_2019",
+      "page": 177,
+      "expected": 407535,
+      "description": "Note 31(a) 2019 'Operating profit before working capital changes' subtotal calculation error. The components listed sum to 407,535, but 417,535 is shown.",
+      "_run": "run_7"
+    },
+    {
+      "description": "Note 3 'Supplementary analysis for the Services segment' incorrectly uses 'HK$000' header for 2019 column while values shown include USD amounts (Logistics 1,173,277) and a mis-keyed SCS amount (88,344,820 instead of 8,834,482).",
+      "page": 177,
+      "category": "presentation",
+      "id": "note_3_currency_and_digit_error_2019",
+      "_run": "run_7"
+    },
+    {
+      "category": "cross_footing",
+      "expected": 10962,
+      "id": "note_8_component_typo_2019",
+      "actual": 15962,
+      "description": "Note 8 Dividends 2019. Interim paid component incorrectly shown as US$15,962k while the calculated line total is US$10,962k. The SOCIE (page 148) correctly shows 10,962 was paid.",
+      "page": 192,
+      "_run": "run_7"
+    },
+    {
+      "page": 245,
+      "id": "note_30_opening_balance_tie_error_2019",
+      "description": "Note 30 Deferred Taxation summary 'movements in the net deferred tax' table. 'At 1 January' opening balance US$13,591k (asset) does not tie to the sum of detailed tables below which show US$13,951k asset (37,684 asset less 23,733 liability).",
+      "actual": 13591,
+      "expected": 13951,
+      "category": "note_ties",
+      "_run": "run_7"
+    },
+    {
+      "description": "The Consolidated Profit and Loss Account title incorrectly identifies the period as the year ended 31 December 2018, despite being in the 2019 Annual Report and containing 2019 data.",
+      "actual": 2018,
+      "id": "pl_title_year_incorrect",
+      "category": "presentation",
+      "page": 143,
+      "_run": "run_3"
+    },
+    {
+      "page": 143,
+      "description": "Turnover for 2019 is stated as 11,601,937 but does not cross-foot to the Total Margin. Based on Cost of Sales (10,221,721), Other Income (27,745) and the stated Total Margin (1,219,336), expected Turnover is 11,413,312. This also conflicts with Note 3.",
+      "expected": 11413312,
+      "actual": 11601937,
+      "id": "pl_turnover_value_error",
+      "category": "cross_footing",
+      "_run": "run_3"
+    },
+    {
+      "page": 143,
+      "actual": 1241591,
+      "expected": 1191591,
+      "category": "cross_footing",
+      "id": "pl_gross_profit_logic_error",
+      "description": "The 'Gross loss' line for 2019 is stated as 1,241,591 but subtracting Cost of Sales (10,221,721) from the expected Turnover (11,413,312) results in 1,191,591. Furthermore, the values are positive and should be labeled 'Gross profit'.",
+      "_run": "run_3"
+    },
+    {
+      "page": 143,
+      "id": "pl_continuing_labeled_discontinued",
+      "category": "presentation",
+      "description": "The top section of the Consolidated Profit and Loss Account is incorrectly labeled 'Discontinued Operations'. Based on the sub-totals below, this section contains Continuing Operations.",
+      "_run": "run_3"
+    },
+    {
+      "id": "pl_unit_header_typo_hkd",
+      "category": "presentation",
+      "description": "Column header for 2019 incorrectly indicates HK$000, but the figures are presented in US$'000, consistent with other reporting throughout the document.",
+      "page": 143,
+      "_run": "run_3"
+    },
+    {
+      "id": "bs_nc_assets_header_label_error",
+      "page": 146,
+      "description": "The header for the top section of the Consolidated Balance Sheet incorrectly reads 'Non-current liabilities' but lists Intangible assets, Property, plant and equipment, and other non-current assets. It should read 'Non-current assets'.",
+      "category": "presentation",
+      "_run": "run_3"
+    },
+    {
+      "actual": 327617,
+      "category": "note_ties",
+      "description": "'Net cash generated from operations' for 2019 is stated as 327,617, which does not tie to Note 31(a) on page 211, where the value is stated as 317,102. Using 317,102 is required to reach the net row subtotal of 280,854.",
+      "id": "cf_ops_cash_note_tie_error",
+      "page": 150,
+      "expected": 317102,
+      "_run": "run_3"
+    },
+    {
+      "category": "rollforward",
+      "expected": 0,
+      "actual": 6992,
+      "page": 150,
+      "description": "The row 'Proceeds from disposal of an associated company' shows a value of 6,992 in the 2019 column. Note 15 on page 190 indicates this disposal occurred in 2018 and has no disposal in 2019. Summing line items to the investing subtotal also reveals this item should be zero for 2019.",
+      "id": "cf_investing_extraneous_item",
+      "_run": "run_3"
+    },
+    {
+      "category": "presentation",
+      "id": "note_1_ifrs_numbering_error",
+      "page": 152,
+      "description": "In Note 1.1(A), the table header 'HKFRS 17' is correctly identified as 'Leases', however HKFRS 17 is Insurance Contracts. Leases is HKFRS 16. Note 1.1(B) on page 155 uses the correct numbering.",
+      "_run": "run_3"
+    },
+    {
+      "category": "presentation",
+      "page": 177,
+      "expected": 8834482,
+      "id": "note_3_scs_turnover_typo",
+      "description": "In the Note 3 supplementary analysis for Service segment, SCS turnover is stated as 88,344,820. This is inconsistent with the total for the segment (9,999,701) and appears to be a typo for 8,834,482 (adding an extra 8 and a 0).",
+      "actual": 88344820,
+      "_run": "run_3"
+    },
+    {
+      "category": "reasonableness",
+      "expected": 13534200,
+      "description": "In the Ten-Year Financial Summary, Turnover for 2017 is stated as 1,353,420 US$'000. This is an order of magnitude lower than surrounding years (approx 13-14 billion) and inconsistent with the reported Core Operating Profit of 362,925 US$'000. It is likely missing a digit at the end.",
+      "id": "summary_ten_year_turnover_2017_unreasonable",
+      "actual": 1353420,
+      "page": 244,
+      "_run": "run_3"
+    },
+    {
+      "category": "presentation",
+      "page": 143,
+      "description": "The Consolidated Profit and Loss Account title date is stated as 'For the year ended 31 December 2018', but this is the Annual Report 2019 and the statement includes 2019 results.",
+      "actual": 2018,
+      "id": "pl_header_date_error_2019",
+      "_run": "run_20"
+    },
+    {
+      "page": 143,
+      "actual": "HK$000",
+      "category": "presentation",
+      "description": "The 2019 column unit in the Consolidated Profit and Loss Account is labeled 'HK$000', while the 2018 column and all other primary statements use US$'000. The values themselves appear to be in US dollars per other report sections.",
+      "id": "pl_unit_label_mismatch_2019",
+      "_run": "run_20"
+    },
+    {
+      "expected": 11413312,
+      "category": "note_ties",
+      "page": 143,
+      "description": "Turnover on the Consolidated Profit and Loss Account (11,601,937) does not tie to the sum of segmented turnover in Note 3 (11,413,312).",
+      "actual": 11601937,
+      "id": "turnover_note_tie_error_2019",
+      "_run": "run_20"
+    },
+    {
+      "id": "total_margin_cross_foot_2019",
+      "expected": 1269336,
+      "category": "cross_footing",
+      "description": "Total margin (1,219,336) does not equal the sum of Gross Profit (labeled Gross loss 1,241,591) and Other income (27,745). Using values from the segmented turnover note, Gross Profit should be 1,191,591 which matches Total Margin.",
+      "actual": 1219336,
+      "page": 143,
+      "_run": "run_20"
+    },
+    {
+      "description": "Intangible assets on the Consolidated Balance Sheet (2,373,252) do not tie to the closing balance in Note 11 (2,298,948). The BS non-current assets subtotal (2,940,021) correctly uses the expected value, making the face entry a typo that breaks cross-footing.",
+      "id": "intangible_assets_note_tie_error_2019",
+      "expected": 2298948,
+      "actual": 2373252,
+      "category": "note_ties",
+      "page": 146,
+      "_run": "run_20"
+    },
+    {
+      "description": "Reserves on the Consolidated Balance Sheet (1,170,520) does not equal the difference between total Attributable Shareholders' Funds (1,264,206) and Share Capital (13,686). The value also fails to tie to the sum of share premium, other reserves and retained earnings in the SOCIE.",
+      "id": "reserves_bs_cross_foot_error_2019",
+      "expected": 1250520,
+      "category": "cross_footing",
+      "page": 147,
+      "actual": 1170520,
+      "_run": "run_20"
+    },
+    {
+      "expected": 317102,
+      "id": "operating_cash_flow_note_tie_2019",
+      "actual": 327617,
+      "page": 150,
+      "category": "note_ties",
+      "description": "Net cash generated from operations on the Consolidated Cash Flow Statement (327,617) does not tie to the reconciliation in Note 31(a) (317,102). The CFS subtotal correctly uses the expected value, making the face entry a math-breaking typo.",
+      "_run": "run_20"
+    },
+    {
+      "expected": 13951,
+      "actual": 13591,
+      "id": "deferred_tax_rollforward_opening_error_2019",
+      "category": "rollforward",
+      "page": 209,
+      "description": "Opening net deferred tax balance in rollforward (13,591) does not match the sum of opening assets (37,684) and liabilities (23,733) shown in the component tables below. Opening net asset should be 13,951.",
+      "_run": "run_20"
+    },
+    {
+      "actual": "1 January 2019",
+      "id": "ifrs16_table_date_error_2019",
+      "description": "Note 1.1 table header 'As at 1 January 2019' contains restatement values that actually pertain to 1 January 2018 (the start of the comparative year). Current restated 2018 data should already be in the 31 Dec 2018 column.",
+      "category": "presentation",
+      "page": 154,
+      "_run": "run_20"
+    },
+    {
+      "id": "segment_supplementary_turnover_cross_foot_2019",
+      "page": 177,
+      "description": "In Note 3 supplementary analysis, the sum of SCS Turnover (88,344,820), Logistics Turnover (1,173,277) and Elimination (8,058) is 89,510,039, but the total is reported as 9,999,701. The SCS value contains an extra digit and is likely US$8,834,482.",
+      "expected": 9999701,
+      "actual": 89510039,
+      "category": "cross_footing",
+      "_run": "run_20"
+    },
+    {
+      "category": "presentation",
+      "page": 177,
+      "description": "The column header in the supplementary segment analysis is labeled 'HK$000', but the values (once corrected for typos) correspond to the US$ dollar figures in the primary segment note and other business review sections.",
+      "actual": "HK$000",
+      "id": "segment_supplementary_unit_error_2019",
+      "_run": "run_20"
+    },
+    {
+      "page": 143,
+      "id": "pl_statement_title_year_typo",
+      "description": "The Consolidated Profit and Loss Account title subtitle is 'For the year ended 31 December 2018', but the statement presents current year figures for 2019 and comparative figures for 2018. It should be 'For the year ended 31 December 2019'.",
+      "category": "presentation",
+      "_run": "run_19"
+    },
+    {
+      "page": 181,
+      "description": "Note 8 'Dividends' states the 2019 interim dividend paid was US$15,962,000. However, the Consolidated Statement of Changes in Equity (page 148) and the Consolidated Cash Flow Statement (page 150) both correctly state the amount as US$10,962,000. US$10,962,000 also aligns with the declared rate of 1 HK cent per share on the reported share count (approx. US$11 million).",
+      "actual": 15962,
+      "id": "dividend_note_8_amount_discrepancy",
+      "expected": 10962,
+      "category": "note_ties",
+      "_run": "run_19"
+    },
+    {
+      "page": 150,
+      "actual": 327617,
+      "description": "In the Consolidated Cash Flow Statement, the line 'Net cash generated from operations' is shown as US$327,617,000. However, Note 31(a) 'Reconciliation of Profit Before Taxation to Net Cash Generated from Operations' clearly calculates this total as US$317,102,000. The subtotal row 'Net cash outflow from operating activities' of US$280,854,000 is mathematically consistent with the components ONLY if the value from Note 31(a) (US$317,102,000) is used (317,102 - 1,129 - 35,119 = 280,854). US$327,617,000 is US$10,515,000 too high.",
+      "id": "cf_ops_cash_footing_error",
+      "category": "cross_footing",
+      "expected": 317102,
+      "_run": "run_19"
+    },
+    {
+      "description": "In Note 1.1(A) 'New Standard ... Adopted by the Group', the second table under 'Consolidated Balance Sheet' is incorrectly headed 'As at 1 January 2019'. The balances shown (e.g., Property, plant and equipment restated to US$187,943,000 and Right-of-use assets of US$421,027,000) match the restated opening balances at 1 January 2018 as shown in the Note 12 rollforward. The balances at 1 January 2019 (equivalent to 31 December 2018) are correctly displayed in the preceding table on page 153.",
+      "category": "presentation",
+      "page": 154,
+      "id": "note_impact_table_header_typo",
+      "_run": "run_19"
+    },
+    {
+      "description": "Trade amount due from other related companies ageing components (256,330 + 147,946 + 141,393) sum to 545,669, but the total displayed is 539,876.",
+      "page": 192,
+      "category": "cross_footing",
+      "id": "note_19_ageing_cross_footing_error",
+      "_run": "run_10"
+    },
+    {
+      "page": 40,
+      "category": "presentation",
+      "description": "Turnover component for 'Sales of goods of Supply Chain Solutions business' is listed as 88,344,820, which is inconsistent with the reported segment turnover of 8,834,482 (US$8,834 million) found elsewhere in the report. This appears to be a typo adding an extra digit.",
+      "id": "note_3_turnover_value_typo",
+      "_run": "run_10"
+    },
+    {
+      "category": "presentation",
+      "id": "note_3_currency_label_error",
+      "page": 40,
+      "description": "The 2019 column header label is incorrect as 'HK$000'. The values in this column are reported in US dollars (US$'000) consistently with the rest of the report.",
+      "_run": "run_10"
+    },
+    {
+      "id": "pl_statement_title_date_error",
+      "category": "presentation",
+      "page": 143,
+      "description": "The Consolidated Profit and Loss Account title incorrectly states 'For the year ended 31 December 2018' despite containing 2019 result data.",
+      "_run": "run_10"
+    },
+    {
+      "id": "pl_statement_header_currency_error",
+      "page": 143,
+      "category": "presentation",
+      "description": "The 2019 column header label incorrectly states 'HK$000' instead of 'US$'000', although the data matches US dollar reporting.",
+      "_run": "run_10"
+    },
+    {
+      "category": "presentation",
+      "description": "The primary result section is incorrectly labeled 'Discontinued Operations' instead of 'Continuing Operations'.",
+      "page": 143,
+      "id": "pl_statement_section_label_error",
+      "_run": "run_10"
+    },
+    {
+      "category": "presentation",
+      "description": "The label 'Gross loss' is used, but the value (1,241,591) is positive, representing a Gross profit. Similarly for the 2018 column.",
+      "page": 143,
+      "id": "pl_statement_gp_label_error_sign",
+      "_run": "run_10"
+    },
+    {
+      "id": "pl_statement_gp_and_margin_math_errors",
+      "page": 143,
+      "category": "cross_footing",
+      "description": "Math error in Profit and Loss: Turnover (11,601,937) minus Cost of sales (10,221,721) equals 1,380,216, but the document displays 1,241,591. Furthermore, GP (1,241,591) plus Other income (27,745) equals 1,269,336, but the document displays 1,219,336. Both subtotals are mathematically incorrect based on their components.",
+      "_run": "run_10"
+    },
+    {
+      "description": "The 'Report of the Directors' (section (d)) states the aggregate master lease transaction amount was US$23,303,000. However, the Note 37 (Related Party Transactions) table only shows US$5,300,000 under row (ii), representing only the 'received' amount and omitting or misstating the 'paid' portion.",
+      "category": "note_ties",
+      "page": 218,
+      "id": "note_37_lease_amount_mismatch_directors_report",
+      "_run": "run_10"
+    },
+    {
+      "description": "The table 'Impacts of adoption of HKFRS 16' is headered 'As at 1 January 2019', but the values (e.g., un-restated PPE of 208,221) correspond to the balance at 1 January 2018 (the beginning of the first comparative year).",
+      "id": "note_1_adoption_table_date_error",
+      "page": 175,
+      "category": "presentation",
+      "_run": "run_10"
+    },
+    {
+      "page": 242,
+      "id": "deferred_tax_net_rollforward_errors",
+      "category": "rollforward",
+      "description": "The net deferred tax movement table contains multiple errors: 1) Opening balance stated as (13,591) doesn't tie to the calculated restated net asset of 13,951. 2) Net P&L credit of 11,184 is incorrectly shown as a drain/charge (11,184). 3) Net OCI/Hedge/Exchange adjustments do not roll forward to the closing balance of (24,953).",
+      "_run": "run_10"
+    },
+    {
+      "category": "presentation",
+      "id": "committee_meetings_attendance_average_inconsistency",
+      "description": "Risk Management Committee average attendance is reported as 93%, which can only be achieved by including non-member Jason Yeung (4/4). Excluding him, the members' average is 21/23 = 91.3%. This inclusion is inconsistent with the Remuneration and Nomination columns which exclude non-member attendance from their averages.",
+      "page": 1,
+      "_run": "run_10"
+    },
+    {
+      "id": "pension_remeasurement_oci_tie_error",
+      "description": "Note 29(v) shows remeasurement gains in OCI for 2018 as (91) US$'000, but the primary OCI statement (page 252) and Note 26 (page 137) show a loss of (2,613) US$'000. These values are significantly different and fail to tie.",
+      "category": "note_ties",
+      "page": 239,
+      "_run": "run_10"
+    },
+    {
+      "expected": 1250520,
+      "id": "consolidated_reserves_typo_2019",
+      "category": "note_ties",
+      "actual": 1170520,
+      "page": 147,
+      "description": "Line item 'Reserves' on the Consolidated Balance Sheet (1,170,520) does not tie to the sum of its components in Note 26 and the Statement of Changes in Equity (1,250,520). The components are Share Premium (760,754), Other Reserves (46,184), and Retained Earnings (443,582).",
+      "_run": "run_11"
+    },
+    {
+      "actual": 1264206,
+      "page": 147,
+      "category": "cross_footing",
+      "id": "equity_subtotal_calculation_mismatch_2019",
+      "expected": 1184206,
+      "description": "On the Consolidated Balance Sheet, 'Shareholders funds attributable to the Company's Shareholders' (1,264,206) is not the correct sum of its printed components: Share Capital (13,686) and Reserves (1,170,520). The actual sum is 1,184,206. This appears related to the reserves typo.",
+      "_run": "run_11"
+    },
+    {
+      "actual": 2373252,
+      "description": "Line item 'Intangible assets' on the Consolidated Balance Sheet (2,373,252) does not tie to the total net book amount in Note 11 (2,298,948).",
+      "expected": 2298948,
+      "id": "intangible_assets_note_tie_mismatch_2019",
+      "page": 146,
+      "category": "note_ties",
+      "_run": "run_11"
+    },
+    {
+      "id": "nca_subtotal_calculation_mismatch_2019",
+      "description": "On the Consolidated Balance Sheet, the subtotal 'Non-current assets' (2,940,021) does not equal the arithmetic sum of the assets listed above it if using the printed value for 'Intangible assets'. The sum using the printed line items is 3,014,325. The subtotal correctly reflects the note-correct value for Intangibles (2,298,948).",
+      "expected": 3014325,
+      "actual": 2940021,
+      "page": 146,
+      "category": "cross_footing",
+      "_run": "run_11"
+    },
+    {
+      "page": 143,
+      "category": "presentation",
+      "expected": 0,
+      "actual": 1,
+      "id": "pnl_header_currency_mismatch_2019_doc_p143",
+      "description": "The column header for 2019 on the Consolidated Profit and Loss Account incorrectly identifies the units and currency as 'HK$’000'. Based on primary summaries (page 13) and statement totals (page 144), the values are intended to be US$’000. This is inconsistent with the '2018 US$’000' comparative column.",
+      "_run": "run_11"
+    },
+    {
+      "actual": 1241591,
+      "category": "cross_footing",
+      "expected": 1191591,
+      "id": "pnl_gp_crossfoot_error_2019",
+      "description": "On the Consolidated Profit and Loss Account, the row 'Gross loss' (intended as Gross Profit based on values) for 2019 (1,241,591) does not equal the difference between Turnover (11,413,312) and Cost of Sales (10,221,721), which is 1,191,591. Additionally, it fails to tie down to Total Margin (1,219,336) when adding Other Income (27,745); the correct subtotal should be 1,219,336. Both checks indicate a discrepancy of 50,000.",
+      "page": 143,
+      "_run": "run_11"
+    },
+    {
+      "expected": 327617,
+      "actual": 317102,
+      "description": "Note 31(a) reconciliation of Net cash generated from operations (317,102) does not tie to the corresponding line item on the Consolidated Cash Flow Statement (327,617). The discrepancy of 10,515 suggests missing or misstated non-cash adjustments.",
+      "page": 211,
+      "id": "cash_flow_recon_tie_error_2019",
+      "category": "note_ties",
+      "_run": "run_11"
+    },
+    {
+      "category": "cross_footing",
+      "id": "cash_flow_recon_missing_impairment_adjustment_2019",
+      "description": "Note 31(a) Reconciliation of Profit Before Taxation to Net Cash Generated from Operations is missing the non-cash adjustment for 'Increase in provision for impairment of trade and other receivables, net' (14,135 per Note 4 and Note 21). This non-cash expense was deducted to arrive at Operating Profit and must be added back in the reconciliation. Its total absence contributes to the reconciliation tie failure.",
+      "page": 211,
+      "expected": 14135,
+      "actual": 0,
+      "_run": "run_11"
+    },
+    {
+      "page": 181,
+      "actual": 15962,
+      "id": "dividend_note_math_error_2019",
+      "category": "cross_footing",
+      "description": "In Note 8 Dividends, the total for 2019 is given as 10,962, but the interim line item is recorded as 15,962. A component cannot exceed the subtotal. Per the SOCE (page 148), the actual interim dividend paid was 10,962.",
+      "expected": 10962,
+      "_run": "run_11"
+    },
+    {
+      "id": "related_party_receivable_aging_mismatch_2019",
+      "page": 192,
+      "expected": 539933,
+      "actual": 545669,
+      "category": "cross_footing",
+      "description": "In Note 19, the aging table for trade amounts due from other related companies (256,330 + 147,946 + 141,393) sums to 545,669, which does not tie to the trade subtotal of 539,933 shown in the primary Note 19 table.",
+      "_run": "run_11"
+    },
+    {
+      "actual": 24593,
+      "expected": 24953,
+      "page": 209,
+      "id": "deferred_tax_recon_math_error_2019_k_variance_360",
+      "description": "Note 30 Deferred Taxation reconciliation: The opening balance (-13,591) + P&L charge (-11,184) + OCI impact (558) + hedging movement (-1,007) + exchange (631) results in a total of -24,593. However, the statement total for 31 December is printed as (24,953).",
+      "category": "cross_footing",
+      "_run": "run_11"
+    },
+    {
+      "actual": 15962,
+      "expected": 10962,
+      "page": 120,
+      "category": "cross_footing",
+      "id": "note_div_crossfoot_2019",
+      "description": "In Note 8, Dividends for 2019, the Interim dividend paid is shown as 15,962 and the Final is Nil, but the Total shown is 10,962. 15,962 + 0 should equal 15,962. Furthermore, based on the share count (~8.5B) and the HK$0.01 dividend, US$10,962 is the mathematically correct total, making the 15,962 figure a typo.",
+      "_run": "run_9"
+    },
+    {
+      "category": "cross_footing",
+      "id": "pl_gp_mismatch_2019",
+      "expected": 1191591,
+      "actual": 1241591,
+      "description": "In the Consolidated Profit and Loss Account for 2019, Gross profit is shown as 1,241,591. However, Turnover (11,413,312) minus Cost of sales (10,221,721) equals 1,191,591. Additionally, adding this Gross profit to Other income (27,745) equals 1,269,336, which does not match the Total margin subtotal of 1,219,336.",
+      "page": 143,
+      "_run": "run_9"
+    },
+    {
+      "category": "presentation",
+      "actual": 613061,
+      "page": 150,
+      "id": "bs_curr_assets_label_err",
+      "expected": 613061,
+      "description": "In the Consolidated Balance Sheet as at 31 December 2019, a line item under Current Assets is incorrectly labeled as 'Due to related companies'. Based on its position in assets and individual Note 19 details showing it as a receivable balance, it should be labeled 'Due from related companies'.",
+      "_run": "run_9"
+    },
+    {
+      "category": "note_ties",
+      "page": 150,
+      "id": "bs_note11_tie_err_2019",
+      "description": "The Intangible assets balance on the face of the Consolidated Balance Sheet at 31 December 2019 is US$2,373,252,000. However, the corresponding Note 11 detail on page 227 shows a closing net book amount of US$2,298,948,000. The non-current asset total on the Balance Sheet (2,940,021) only footprints correctly using the lower Note 11 amount.",
+      "expected": 2298948,
+      "actual": 2373252,
+      "_run": "run_9"
+    },
+    {
+      "expected": 1250520,
+      "id": "bs_reserves_crossfoot_err_2019",
+      "actual": 1170520,
+      "page": 180,
+      "category": "cross_footing",
+      "description": "In the Consolidated Balance Sheet as at 31 December 2019, the 'Reserves' line item is US$1,170,520,000. Summing this with Share capital (13,686,000) yields 1,184,206,000, which does not equal the reported subtotal for Shareholders' funds of US$1,264,206,000. Based on the Statement of Changes in Equity, the correct Reserves figure should be US$1,250,520,000.",
+      "_run": "run_9"
+    },
+    {
+      "id": "note22_sign_err_2019",
+      "description": "In Note 22, Cash and Cash Equivalents, the 2019 cash and bank balance of 932,167 is shown in brackets '(932,167)', suggesting a negative/overdraft balance. However, it is reported as a positive current asset on the Balance Sheet and as US$932 million cash on hand in the Summary of the Year.",
+      "category": "presentation",
+      "actual": -932167,
+      "expected": 932167,
+      "page": 195,
+      "_run": "run_9"
+    },
+    {
+      "id": "cf_note31a_tie_err_2019",
+      "description": "On the face of the Consolidated Cash Flow Statement for 2019, 'Net cash generated from operations' is US$327,617,000. However, Note 31(a) shows this total as US$317,102,000. The final cash flow subtotal 'Net cash outflow from operating activities' (280,854) only footprints correctly starting from the 317,102 figure.",
+      "expected": 317102,
+      "category": "note_ties",
+      "actual": 327617,
+      "page": 218,
+      "_run": "run_9"
+    },
+    {
+      "category": "cross_footing",
+      "page": 140,
+      "id": "note31a_subtotal_crossfoot_2019",
+      "actual": 417535,
+      "expected": 407535,
+      "description": "In Note 31(a) for 2019, the subtotal 'Operating profit before working capital changes' is US$417,535,000. Summing the individual adjustment components starting from Profit before taxation (70,027) yields US$407,535,000, indicating a discrepancy of US$10,000,000.",
+      "_run": "run_9"
+    },
+    {
+      "actual": null,
+      "expected": null,
+      "page": 177,
+      "category": "presentation",
+      "id": "note3_unit_label_err_2019",
+      "description": "In the 'Supplementary analysis for the Services segment' table within Note 3, the turnover column for 2019 is incorrectly labeled 'HK$000'. The values shown (e.g., SCS Turnover 8,834,820) are clearly in US$'000, matching MD&A and overall group segment reporting results in USD.",
+      "_run": "run_9"
+    },
+    {
+      "description": "On the face of the Consolidated Balance Sheet, the 'Reserves' line item under the Equity section is missing a note reference to Note 26. Other equity components correctly reference their respective notes.",
+      "page": 180,
+      "category": "presentation",
+      "actual": null,
+      "expected": null,
+      "id": "bs_missing_note_ref_reserves",
+      "_run": "run_9"
+    },
+    {
+      "category": "cross_footing",
+      "id": "pl_gross_profit_mismatch_2019",
+      "actual": 1241591,
+      "expected": 1191591,
+      "description": "Gross Profit subtotal of US$1,241,591 does not equal Turnover (US$11,413,312) minus Cost of sales (US$10,221,721), which is US$1,191,591. The listed Total margin (US$1,219,336) correctly follows from 1,191,591 + Other income (27,745), meaning the US$1,241,591 Gross Profit figure is an internal calculation error.",
+      "page": 143,
+      "_run": "run_26"
+    },
+    {
+      "page": 147,
+      "description": "The 'Reserves' line item of US$1,170,520 plus Share Capital of US$13,686 equals US$1,184,206, which does not tie to the listed subtotal 'Shareholders funds attributable to the Company’s Shareholders' of US$1,264,206. Based on the Statement of Changes in Equity, the calculated sum of Share Premium, Other Reserves, and Retained Earnings is US$1,250,520, indicating the US$1,170,520 figure is incorrect by US$80,000.",
+      "category": "cross_footing",
+      "actual": 1170520,
+      "id": "bs_reserves_sum_mismatch_2019",
+      "expected": 1250520,
+      "_run": "run_26"
+    },
+    {
+      "page": 204,
+      "id": "note_28_maturity_subtotal_error_2019",
+      "category": "cross_footing",
+      "expected": 1563851,
+      "actual": 1538851,
+      "description": "The subtotal 'Wholly repayable within 5 years' of US$1,538,851 does not equal the sum of its listed components (516,798 + 314,079 + 732,974 = 1,563,851). Variance of 25,000.",
+      "_run": "run_26"
+    },
+    {
+      "expected": 545669,
+      "actual": 539876,
+      "id": "note_19_ageing_cross_foot_mismatch",
+      "category": "cross_footing",
+      "page": 192,
+      "description": "The ageing detail rows for trade amounts due from other related companies (256,330 + 147,946 + 141,393) sum to US$545,669, which does not match the listed subtotal/total for the table of US$539,876. Variance of 5,793.",
+      "_run": "run_26"
+    },
+    {
+      "page": 211,
+      "expected": 327617,
+      "id": "cf_recon_net_cash_tie_error_2019",
+      "description": "The 'Net cash generated from operations' from Continuing Operations in the reconciliation note (US$317,102) does not tie to the amount shown on the face of the Consolidated Cash Flow Statement (US$327,617). Variance of 10,515.",
+      "actual": 317102,
+      "category": "note_ties",
+      "_run": "run_26"
+    },
+    {
+      "page": 151,
+      "category": "presentation",
+      "actual": 612931,
+      "expected": 612391,
+      "description": "The opening 'Cash and cash equivalents at 1 January Continuing Operations' on the Cash Flow Statement (US$612,931) does not tie to the prior year 'Cash and bank balances' on the Balance Sheet (US$612,391). Variance of 540.",
+      "id": "opening_cash_flow_balance_mismatch_2019",
+      "_run": "run_26"
+    },
+    {
+      "actual": 15962,
+      "id": "interim_dividend_inconsistency_2019",
+      "category": "presentation",
+      "expected": 10962,
+      "page": 181,
+      "description": "Inconsistency in the 2019 interim dividend throughout the report: Note 8 (page 181) states US$15,962,000; the Statement of Changes in Equity (page 209) states US$10,962,000; and the Report of the Directors (page 121) states approximately US$11 million. The Statement of Changes in Equity and Cash Flow Statement appear to use the US$10,962,000 figure.",
+      "_run": "run_26"
+    },
+    {
+      "id": "pl_title_date_error_2019",
+      "expected": 2019,
+      "page": 8,
+      "actual": 2018,
+      "category": "presentation",
+      "description": "Statement title date is incorrectly shown as '31 December 2018' instead of 2019.",
+      "_run": "run_14"
+    },
+    {
+      "actual": 11601937,
+      "expected": 11413312,
+      "description": "Turnover in P&L (11,601,937) does not tie to Note 3 Segment Information (11,413,312) on page 47.",
+      "category": "note_ties",
+      "page": 8,
+      "id": "turnover_mismatch_pl_note3",
+      "_run": "run_14"
+    },
+    {
+      "id": "gross_loss_calc_mismatch_pl",
+      "category": "cross_footing",
+      "description": "Gross loss (label error, should be profit) calculation is incorrect: 11,601,937 (Turnover) - 10,221,721 (Cost of sales) = 1,380,216.",
+      "page": 8,
+      "actual": 1241591,
+      "expected": 1380216,
+      "_run": "run_14"
+    },
+    {
+      "description": "Total margin (1,219,336) does not equal sum of its components Gross loss (1,241,591) and Other income (27,745), which sum to 1,269,336.",
+      "expected": 1269336,
+      "page": 8,
+      "category": "cross_footing",
+      "id": "total_margin_sum_error_pl",
+      "actual": 1219336,
+      "_run": "run_14"
+    },
+    {
+      "page": 35,
+      "category": "cross_footing",
+      "expected": 3014325,
+      "actual": 2940021,
+      "description": "Non-current assets (incorrectly labeled as liabilities) total 2,940,021 does not sum to its reported components (which sum to 3,014,325).",
+      "id": "non_current_assets_total_error_bs",
+      "_run": "run_14"
+    },
+    {
+      "expected": 2298948,
+      "page": 35,
+      "id": "intangible_assets_bs_note_tie_error",
+      "actual": 2373252,
+      "category": "note_ties",
+      "description": "Intangible assets on Balance Sheet (2,373,252) do not tie to Note 11 (2,298,948) on page 64.",
+      "_run": "run_14"
+    },
+    {
+      "description": "Net cash generated from operations (327,617) does not tie to Note 31(a) (317,102) on page 91.",
+      "category": "note_ties",
+      "page": 13,
+      "expected": 317102,
+      "id": "cash_gen_ops_note_tie_error_cf",
+      "actual": 327617,
+      "_run": "run_14"
+    },
+    {
+      "expected": 291369,
+      "actual": 280854,
+      "id": "net_op_cash_outflow_error_cf_2019",
+      "description": "Net cash outflow from operating activities calculation is incorrect based on reported components: 327,617 - 1,129 - 35,119 = 291,369.",
+      "page": 13,
+      "category": "cross_footing",
+      "_run": "run_14"
+    },
+    {
+      "expected": 1184206,
+      "actual": 1264206,
+      "category": "cross_footing",
+      "id": "shareholders_funds_cross_foot_error_bs_2019",
+      "page": 190,
+      "description": "Shareholders' funds subtotal (1,264,206) is not the sum of its components: Share capital (13,686) + Reserves (1,170,520) = 1,184,206.",
+      "_run": "run_14"
+    },
+    {
+      "category": "rollforward",
+      "id": "ppe_motor_rollforward_error_2019_note12",
+      "page": 243,
+      "actual": 1868,
+      "expected": 1877,
+      "description": "Motor vehicles and company boat net book amount rollforward is incorrect: 1,501 (Beg) - 10 (Exch) + 1,342 (Add) - 79 (Disp) - 877 (Depr) = 1,877.",
+      "_run": "run_14"
+    },
+    {
+      "expected": 195881,
+      "page": 243,
+      "category": "rollforward",
+      "actual": 195876,
+      "id": "ppe_total_rollforward_error_2019_note12",
+      "description": "Total PPE net book amount rollforward is incorrect: 201,973 (Beg) - 603 (Exch) + 48,072 (Add) - 3,094 (Disp) - 50,467 (Depr) = 195,881.",
+      "_run": "run_14"
+    },
+    {
+      "category": "reasonableness",
+      "id": "eps_div_fx_rate_inconsistency_summary",
+      "description": "Inconsistent exchange rates used for per-share data: EPS (1.6 HK cents / 0.20 US cents = 8.0) vs Dividends (1 HK cent / 0.1 US cents = 10.0).",
+      "actual": 10,
+      "page": 203,
+      "expected": 8,
+      "_run": "run_14"
+    },
+    {
+      "expected": 0,
+      "category": "presentation",
+      "id": "bs_nc_header_label_error",
+      "actual": 0,
+      "description": "Non-current assets section header incorrectly labeled 'Non-current liabilities' on Balance Sheet.",
+      "page": 35,
+      "_run": "run_14"
+    },
+    {
+      "actual": 0,
+      "category": "presentation",
+      "expected": 0,
+      "page": 8,
+      "id": "pl_unit_label_error_2019",
+      "description": "2019 column labeled 'HK$000' in P&L, inconsistent with entire report presenting in US$ per Note 1.4(A).",
+      "_run": "run_14"
+    },
+    {
+      "page": 148,
+      "description": "Statement of Changes in Equity (SOCE) column headers for 'Share capital' and 'Share premium' incorrectly reference Note 26. These line items are discussed in Note 25. Note 26 refers to 'Reserves'.",
+      "category": "presentation",
+      "id": "soce_note_reference_error",
+      "_run": "run_29"
+    },
+    {
+      "page": 209,
+      "description": "The summary rollforward table for deferred tax shows a 1 January 2019 balance of US$(13,591). However, the restated 31 December 2018 balance was US$(13,951). Furthermore, starting the rollforward from US$(13,951) with the provided movements [ (11,184) charge to P&L, 558 OCI, (1,007) hedge, 631 exch ] correctly arrives at the closing balance of (24,953), whereas starting from (13,591) does not.",
+      "expected": -13951,
+      "category": "rollforward",
+      "id": "deferred_tax_opening_mismatch",
+      "_run": "run_29"
+    },
+    {
+      "page": 146,
+      "category": "note_ties",
+      "description": "Intangible assets on the Consolidated Balance Sheet face (US$2,373,252) does not tie to the closing balance in Note 11 (US$2,298,948). The Balance Sheet subtotal for non-current assets (US$2,940,021) suggests the Note 11 value was intended, while the line item description contains a typo.",
+      "expected": 2298948,
+      "actual": 2373252,
+      "id": "intangible_assets_tie_error",
+      "_run": "run_29"
+    },
+    {
+      "actual": 11601937,
+      "expected": 11413312,
+      "id": "turnover_tie_erroripp",
+      "page": 143,
+      "description": "Turnover on the Consolidated Profit and Loss Account face (US$11,601,937) does not tie to Note 3 segment turnover (US$11,413,312). Note 3 turnover ties to other summaries throughout the report.",
+      "category": "note_ties",
+      "_run": "run_29"
+    },
+    {
+      "id": "pl_currency_label_error",
+      "description": "In the Consolidated Profit and Loss Account, the 2019 column is incorrectly labeled as 'HK$000'. Based on all other statements and the values provided, the currency should be 'US$000'.",
+      "page": 143,
+      "category": "presentation",
+      "_run": "run_29"
+    },
+    {
+      "description": "The Consolidated Profit and Loss Account includes a 'Discontinued Operations' header mistakenly placed over the primary results of Continuing Operations. Discontinued operations results for 2018 are correctly presented at the bottom of the statement.",
+      "category": "presentation",
+      "page": 143,
+      "id": "pl_discontinued_header_error_presentation",
+      "_run": "run_29"
+    },
+    {
+      "actual": 327617,
+      "expected": 317102,
+      "category": "note_ties",
+      "id": "cf_ops_tie_error",
+      "description": "Net cash generated from operations on the face of the Consolidated Cash Flow Statement (US$327,617) does not tie to the reconciliation total in Note 31(a) (US$317,102). The Cash Flow subtotal for operating activities (US$280,854) correctly uses the Note 31(a) value (317,102 - 36,248 taxes = 280,854), identifying the US$327,617 as a typo.",
+      "page": 150,
+      "_run": "run_29"
+    },
+    {
+      "description": "In the rollforward analysis of cash and cash equivalents, the total for 1 January 2019 is given as US$612,391, but the components listed are Continuing Operations US$612,931 and Discontinued Operations US$0. The components sum to US$612,931. This US$612,931 is also a typo, as the restated 31 December 2018 balance was US$612,391.",
+      "actual": 612391,
+      "expected": 612931,
+      "id": "cf_opening_cash_mismatch_cross_footing_subtable",
+      "category": "cross_footing",
+      "page": 151,
+      "_run": "run_29"
+    },
+    {
+      "expected": 277547,
+      "id": "pl_cop_sum_erroripp_math",
+      "description": "Core Operating Profit on the Profit and Loss Account face (US$227,547) does not sum from its components: Gross Profit US$1,241,591 + Other Income US$27,745 - Selling and distribution US$384,973 - Merchandising and administrative US$606,816. The sum should be US$277,547.",
+      "actual": 227547,
+      "category": "cross_footing",
+      "page": 143,
+      "_run": "run_29"
+    },
+    {
+      "category": "presentation",
+      "id": "pl_header_year_mismatch",
+      "page": 143,
+      "actual": 2018,
+      "expected": 2019,
+      "description": "The subtitle of the Consolidated Profit and Loss Account incorrectly states 'For the year ended 31 December 2018' instead of 2019.",
+      "_run": "run_12"
+    },
+    {
+      "id": "pl_section_label_error",
+      "description": "The main results section of the Consolidated Profit and Loss Account is incorrectly labeled 'Discontinued Operations' instead of 'Continuing Operations'.",
+      "category": "presentation",
+      "page": 143,
+      "_run": "run_12"
+    },
+    {
+      "description": "Note 1.1(A) incorrectly labels the newly adopted standard for Leases as 'HKFRS 17' instead of HKFRS 16. HKFRS 17 is Insurance Contracts.",
+      "id": "note_1_hkfrs_reference_error_leases",
+      "expected": 16,
+      "page": 152,
+      "category": "presentation",
+      "actual": 17,
+      "_run": "run_12"
+    },
+    {
+      "actual": 15962,
+      "category": "cross_footing",
+      "id": "dividend_note_crossfoot_error_2019",
+      "page": 181,
+      "expected": 10962,
+      "description": "In Note 8 Dividends, the interim dividend US$15,962 and final dividend Nil do not sum to the total dividends of US$10,962 for 2019. The correct interim dividend is US$10,962.",
+      "_run": "run_12"
+    },
+    {
+      "actual": 327617,
+      "expected": 317102,
+      "page": 150,
+      "id": "cash_flow_note_tie_error_ops_cash",
+      "description": "The 'Net cash generated from operations' on the face of the Consolidated Cash Flow Statement (US$327,617) does not tie to the amount correctly calculated in Note 31(a) (US$317,102). US$317,102 is the value that correctly feds the subtotal US$280,854 after taxes paid.",
+      "category": "note_ties",
+      "_run": "run_12"
+    },
+    {
+      "page": 148,
+      "actual": 0,
+      "id": "socie_missing_transfer_value_re",
+      "category": "cross_footing",
+      "expected": -577,
+      "description": "In the Consolidated Statement of Changes in Equity, the row 'Transfer to capital reserve' is missing the debit entry of (577) in the Retained Earnings column, which causes the row to not cross-foot. The total retained earnings ending balance of 443,582 correctly reflects this missing amount.",
+      "_run": "run_12"
+    },
+    {
+      "expected": 76038,
+      "category": "rollforward",
+      "page": 188,
+      "description": "In Note 12 Property, Plant and Equipment, the 2018 rollforward for 'Plant and machinery' row does not foot: Opening NBV 62,529 - Exchange 1,072 + Additions 29,174 - Disposals NBV 2,696 - Depreciation 11,897 = 76,038, but the ending balance shown is 75,738. The difference of 300 likely relates to software disposals erroneously omitted from this note.",
+      "id": "ppe_rollforward_plant_mismatch_2018",
+      "actual": 75738,
+      "_run": "run_12"
+    }
+  ],
+  "summary": {
+    "raw_findings": 300,
+    "high": 30,
+    "medium": 19,
+    "low": 3,
+    "total_unique": 52
+  }
+}
