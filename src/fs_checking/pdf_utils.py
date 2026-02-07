@@ -2,19 +2,22 @@
 
 Provides:
 - pdf_to_images: Convert PDF pages to JPEG images
-- Vision API calls for table extraction (optional)
+- pdf_to_image_content: Convert PDF to OpenRouter image content blocks
+- shuffle_pdf_pages: Lossless page reorder for ensemble diversity
 """
+
+import base64
 
 import fitz  # PyMuPDF
 
 
-def pdf_to_images(pdf_bytes: bytes, dpi: int = 150, quality: int = 80) -> list[bytes]:
+def pdf_to_images(pdf_bytes: bytes, dpi: int = 150, quality: int = 70) -> list[bytes]:
     """Convert PDF to list of JPEG images (one per page).
 
     Args:
         pdf_bytes: Raw PDF file content
-        dpi: Resolution for rendering (150 is good balance of quality/size)
-        quality: JPEG quality 1-100 (80 is good balance for text documents)
+        dpi: Resolution for rendering (default 150 — good for FS tables)
+        quality: JPEG quality 1-100 (default 70 — small files, readable text)
 
     Returns:
         List of JPEG image bytes, one per page
@@ -33,6 +36,55 @@ def pdf_to_images(pdf_bytes: bytes, dpi: int = 150, quality: int = 80) -> list[b
         doc.close()
 
     return images
+
+
+def pdf_to_image_content(
+    pdf_bytes: bytes,
+    dpi: int = 150,
+    quality: int = 70,
+    shuffle_seed: int | None = None,
+) -> list[dict]:
+    """Convert PDF pages to OpenRouter-compatible image content blocks.
+
+    Each page gets a text label with its original document page number,
+    followed by the rendered JPEG image. Pages can optionally be shuffled
+    for ensemble diversity while preserving page number labels.
+
+    Args:
+        pdf_bytes: Raw PDF file content
+        dpi: Render resolution (default 150)
+        quality: JPEG quality (default 70)
+        shuffle_seed: If set, shuffle the page order using this seed.
+            Page number labels are preserved so the model can still
+            report errors by document page number.
+
+    Returns:
+        List of content block dicts ready for OpenRouter messages API.
+    """
+    import random as _random
+
+    images = pdf_to_images(pdf_bytes, dpi=dpi, quality=quality)
+    num_pages = len(images)
+
+    # Build (page_number_1based, jpeg_bytes) pairs
+    pages = [(i + 1, img) for i, img in enumerate(images)]
+
+    if shuffle_seed is not None:
+        _random.seed(shuffle_seed)
+        _random.shuffle(pages)
+
+    content: list[dict] = []
+    for page_num, jpg_bytes in pages:
+        # Label so the model knows the original page number
+        content.append({"type": "text", "text": f"[Page {page_num} of {num_pages}]"})
+        b64 = base64.b64encode(jpg_bytes).decode()
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+            }
+        )
+    return content
 
 
 def get_page_count(pdf_bytes: bytes) -> int:

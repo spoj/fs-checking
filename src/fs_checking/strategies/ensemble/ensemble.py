@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ...api import OpenRouterClient
-from ...pdf_utils import get_page_count, shuffle_pdf_pages
+from ...pdf_utils import get_page_count, pdf_to_image_content, shuffle_pdf_pages
 
 DEFAULT_DETECT_MODEL = "google/gemini-3-flash-preview"
 DEFAULT_RANK_MODEL = "google/gemini-3-pro-preview"
@@ -232,6 +232,9 @@ async def _run_detection_pass(
     shuffle: bool = True,
     stagger_max: float = 0.0,
     partial_results: dict | None = None,
+    use_images: bool = False,
+    image_dpi: int = 150,
+    image_quality: int = 70,
 ) -> tuple[list[dict], dict]:
     """Run a single detection pass on PDF using log_issue tool calls.
 
@@ -247,6 +250,10 @@ async def _run_detection_pass(
         stagger_max: Max random delay in seconds before starting (0 = no delay)
         partial_results: Shared dict keyed by run_id. Findings are written here
             as they arrive so they survive task cancellation in race mode.
+        use_images: If True, convert PDF pages to JPEG images instead of
+            sending raw PDF. Useful for models with poor native PDF support.
+        image_dpi: Resolution for image conversion (default 150).
+        image_quality: JPEG quality for image conversion (default 70).
 
     Returns:
         Tuple of (findings list, aggregated usage dict)
@@ -255,24 +262,34 @@ async def _run_detection_pass(
     if stagger_max > 0:
         delay = random.uniform(0, stagger_max)
         await asyncio.sleep(delay)
-    # Optionally shuffle pages
-    if shuffle:
-        pdf_to_send = shuffle_pdf_pages(pdf_bytes, config.seed)
-    else:
-        pdf_to_send = pdf_bytes
 
-    # Build message with PDF
-    pdf_b64 = base64.b64encode(pdf_to_send).decode()
-    user_content = [
-        {
-            "type": "file",
-            "file": {
-                "filename": pdf_name,
-                "file_data": f"data:application/pdf;base64,{pdf_b64}",
+    # Build message content
+    if use_images:
+        # Image mode: render pages as JPEG, shuffle at image level
+        user_content: list[dict] = pdf_to_image_content(
+            pdf_bytes,
+            dpi=image_dpi,
+            quality=image_quality,
+            shuffle_seed=config.seed if shuffle else None,
+        )
+        user_content.append({"type": "text", "text": DETECT_PROMPT})
+    else:
+        # Native PDF mode: shuffle at PDF level (lossless page reorder)
+        if shuffle:
+            pdf_to_send = shuffle_pdf_pages(pdf_bytes, config.seed)
+        else:
+            pdf_to_send = pdf_bytes
+        pdf_b64 = base64.b64encode(pdf_to_send).decode()
+        user_content = [
+            {
+                "type": "file",
+                "file": {
+                    "filename": pdf_name,
+                    "file_data": f"data:application/pdf;base64,{pdf_b64}",
+                },
             },
-        },
-        {"type": "text", "text": DETECT_PROMPT},
-    ]
+            {"type": "text", "text": DETECT_PROMPT},
+        ]
 
     messages = [{"role": "user", "content": user_content}]
     tools = [LOG_ISSUE_TOOL]
@@ -408,6 +425,9 @@ async def run_ensemble(
     shuffle: bool = True,
     num_launch: int | None = None,
     stagger_max: float = 0.0,
+    use_images: bool = False,
+    image_dpi: int = 150,
+    image_quality: int = 70,
 ) -> dict:
     """Run ensemble detection with rank/dedupe.
 
@@ -424,6 +444,11 @@ async def run_ensemble(
         shuffle: If True (default), shuffle PDF pages for each run for diversity
         num_launch: Total runs to launch (default: same as num_runs, no race)
         stagger_max: Max random delay in seconds before each run starts
+        use_images: If True, pre-render PDF pages as JPEG images instead of
+            sending native PDF. Increases token count but may help models
+            that struggle with native PDF parsing.
+        image_dpi: Resolution for image pre-rendering (default 150).
+        image_quality: JPEG quality for image pre-rendering (default 70).
 
     Returns:
         Result dict with prioritized findings and metadata
@@ -439,7 +464,11 @@ async def run_ensemble(
     num_pages = get_page_count(pdf_bytes)
     print(f"Pages: {num_pages}", file=sys.stderr)
 
-    mode = "PDF shuffled" if shuffle else "PDF sequential"
+    if use_images:
+        mode = f"JPEG images ({image_dpi}dpi q{image_quality})"
+    else:
+        mode = "native PDF"
+    mode += ", shuffled" if shuffle else ", sequential"
     print(f"Mode: {mode}", file=sys.stderr)
     race_str = (
         f" (launch {num_launch}, keep {num_runs})" if num_launch > num_runs else ""
@@ -484,6 +513,9 @@ async def run_ensemble(
                 shuffle=shuffle,
                 stagger_max=stagger_max,
                 partial_results=partial_results,
+                use_images=use_images,
+                image_dpi=image_dpi,
+                image_quality=image_quality,
             ),
             name=config.run_id,
         )
@@ -575,7 +607,8 @@ async def run_ensemble(
             "num_runs": num_runs,
             "num_launched": num_launch,
             "stagger_max": stagger_max,
-            "mode": "pdf_shuffled" if shuffle else "pdf_sequential",
+            "input_mode": "images" if use_images else "pdf",
+            "shuffled": shuffle,
             "num_pages": num_pages,
             "elapsed_seconds": round(elapsed, 1),
             "cost_usd": round(total_cost, 4),
@@ -644,6 +677,23 @@ async def main():
         default=0.0,
         help="Max random delay in seconds before each run starts (default: 0)",
     )
+    parser.add_argument(
+        "--images",
+        action="store_true",
+        help="Pre-render PDF pages as JPEG images instead of sending native PDF",
+    )
+    parser.add_argument(
+        "--image-dpi",
+        type=int,
+        default=150,
+        help="DPI for image pre-rendering (default: 150)",
+    )
+    parser.add_argument(
+        "--image-quality",
+        type=int,
+        default=70,
+        help="JPEG quality for image pre-rendering (default: 70)",
+    )
 
     args = parser.parse_args()
 
@@ -656,6 +706,9 @@ async def main():
         shuffle=not args.no_shuffle,
         num_launch=args.launch,
         stagger_max=args.stagger,
+        use_images=args.images,
+        image_dpi=args.image_dpi,
+        image_quality=args.image_quality,
     )
 
 
