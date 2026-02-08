@@ -195,6 +195,91 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 
 **Observation:** Large run-to-run variance (83.9% vs 97.1% recall). The ranker kept 46 vs 28 unique findings — less aggressive merging in r2 preserved more distinct errors. This confirms the ranker's merge behavior is the main source of eval variance, not detection coverage.
 
+### 2026-02-08 — 25x Flash, race 30/25, RING shuffle, visual FS-only 150dpi (110 pages)
+
+- **Config**: 25x `gemini-3-flash-preview`, race 30/25, stagger 5s, `--shuffle-mode ring` (circular offset, randomized start per seed), rasterized 110 FS pages at 150dpi q70
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 23/29 (79.3%)
+- **Precision**: 85.2% (23 TP, 4 FP)
+- **F1**: 82.1%
+- **Cost**: $3.31
+- **Time**: 530s
+- **Raw findings**: 354 (36 from partial harvest)
+- **Unique after dedupe**: 19 (H:6 M:12 L:1)
+
+**Detected (23/29):** inject_000, inject_001, inject_003, inject_004, inject_005, inject_006, inject_008, inject_009, inject_010, inject_011, inject_012, inject_013, inject_014, inject_016, inject_017, inject_018, inject_019, inject_020, inject_021, inject_022, inject_023, inject_026, inject_027
+
+**Missed (6/29):** inject_002 (tie_break SOCIE), inject_007 (transposition p153), inject_015 (note ref off-by-one — always missed), inject_024 (restated label), inject_025 (HKFRS ref), inject_028 (year swap p156)
+
+**Observation:** Ring shuffle significantly underperforms random shuffle on recall (79.3% vs 83.9%-97.1%). The ranker was also very aggressive — 354 raw → 19 unique (vs 28-46 for random). Key hypothesis: random shuffle's diversity comes from breaking adjacency — each run samples a genuinely different subset of pages early (where attention is strongest). Ring mode preserves adjacency so runs that start near each other see very similar page sequences, reducing effective diversity. The lower cost ($3.31 vs $3.67-$3.87) is just from fewer turns per run, not an advantage. **Verdict: ring shuffle is worse than random shuffle. Random remains the default.**
+
+### 2026-02-08 — Raw vs Ranked variance decomposition
+
+Ran LLM eval on raw findings (pre-ranker) for ring, random r1, and random r2 to isolate how much recall the ranker destroys.
+
+| Run | Raw findings | Raw GT hit | Ranked findings | Ranked GT hit | Ranker lost | Reduction % |
+|-----|-------------|------------|-----------------|---------------|-------------|-------------|
+| random r1 | 315 | 28/29 | 28 | 26/29 | 2 errors | 91% |
+| random r2 | 332 | 28/29 | 46 | 28/29 | 0 errors | 86% |
+| ring | 354 | 27/29 | 19 | 23/29 | 4 errors | 95% |
+
+**Key finding: the ranker is the dominant source of recall variance, not detection.**
+
+- Detection phase: ring loses only 1 GT error vs random (27 vs 28 raw). All three runs detect 27-28/29 before ranking.
+- Ranker phase: ring loses 4 GT errors during dedup (27→23), random loses 0-2 (28→26 or 28→28). The ranker contributes ~80% of the recall gap.
+- Ring's higher reduction rate (95% vs 86-91%) confirms adjacency preservation produces more similar findings across runs, causing over-aggressive merging.
+- Random r2 ranker kept 46 findings (less aggressive) and lost 0 GT errors. Random r1 kept 28 (more aggressive) and lost 2. Ranker aggressiveness is the single biggest lever on recall.
+
+### 2026-02-08 — Recall scaling curve: raw recall vs. number of detectors
+
+Subsampled 5, 10, 15, 20, 25 runs from random r1 and r2 raw findings (same seed=42 subsample order). Evaluated each subset against GT with LLM eval. All numbers are **raw recall** (pre-ranker).
+
+**NOTE: Previous eval recall calculations were buggy** — `TP/(TP+FN)` counted match pairs, not unique GT. Fixed to `unique_gt_matched / total_gt`. Some historical recall %s in earlier entries are inflated (GT hit counts were always correct).
+
+| N runs | r1 GT hit | r1 recall | r2 GT hit | r2 recall | avg recall |
+|--------|-----------|-----------|-----------|-----------|------------|
+| 5      | 21/29     | 72.4%     | 17/29     | 58.6%     | 65.5%      |
+| 10     | 26/29     | 89.7%     | 25/29     | 86.2%     | 87.9%      |
+| 15     | 28/29     | 96.6%     | 26/29     | 89.7%     | 93.1%      |
+| 20     | 28/29     | 96.6%     | 27/29     | 93.1%     | 94.8%      |
+| 25     | 28/29     | 96.6%     | 28/29     | 96.6%     | 96.6%      |
+
+**r1 misses by N:** n5: inject_009,010,014,015,017,021,024,025 (8) | n10: inject_015,017,021 (3) | n15+: inject_015 only
+
+**r2 misses by N:** n5: inject_002,007,008,010,015,017,021,023,024,025,027,028 (12) | n10: inject_007,015,017,025 (4) | n15: inject_007,015,025 (3) | n20: inject_015,025 (2) | n25: inject_015 only
+
+**Plot**: `samples/recall_vs_detectors.png`
+
+**Key observations:**
+1. Classic log curve — steep gains 5→15, diminishing 15→25. Both converge to 28/29.
+2. **15 runs is the sweet spot** for cost/recall: avg 93.1% raw recall, captures most of the curve.
+3. **inject_015 (Note 25→26 off-by-one) is a model blind spot** — never detected in any run across either set (0/60 runs). This is not a coverage problem but a detection capability limit.
+4. **High variance at n=5**: r1 hit 21/29 vs r2 hit 17/29 (seed luck). Stabilizes by n=15.
+5. **The ranker is the bottleneck, not detection.** At n=25, both sets achieve 28/29 raw recall. But the ranker previously dropped this to 26/29 (r1) or kept it at 28/29 (r2) depending on merge aggressiveness. Ranker prompt has been updated to be less aggressive; ranker no longer receives the PDF (prevents it from second-guessing detectors).
+
+### 2026-02-08 — 25x Flash, race 30/25, revised ranker (no PDF, softer prompt, GPT-5.2), visual FS-only 150dpi
+
+- **Config**: 25x `gemini-3-flash-preview`, race 30/25, stagger 5s, random shuffle, rasterized 110 FS pages at 150dpi q70. Ranker: `openai/gpt-5.2`, no PDF attached, softer merge prompt.
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 25/29 (86.2%)
+- **Precision**: 55.6% (25/45 model findings correct)
+- **F1**: 67.6%
+- **Cost**: $3.42
+- **Time**: 837s
+- **Raw findings**: 224 (7 from partial harvest) from only 22 productive runs
+- **Unique after dedupe**: 49 (H:20 M:29 L:0)
+
+**Detected (25/29):** inject_000,001,003,004,005,006,007,008,009,010,011,012,013,016,018,019,020,021,022,023,024,025,026,027,028
+
+**Missed (4/29):** inject_002 (SOCIE tie-break), inject_014 (magnitude ÷10 p246), inject_015 (note ref off-by-one — always missed), inject_017 (BS column header year swap)
+
+**Issues identified:**
+1. **4 empty runs claimed race slots.** Runs 2, 16, 25, 28 completed in <40s with 0 findings — likely API returned a non-tool-call response immediately. These took 4 of the 25 keeper slots, reducing effective detection runs to ~21. Need to filter out zero-finding runs from the race or not count them as "complete".
+2. **GPT-5.2 ranker kept 49 findings (good — less aggressive)** but many FPs are cascade effects (secondary footing errors caused by primary injections). Precision dropped (55.6% vs previous 73-85%) but this is acceptable — the goal is recall.
+3. **Lower raw count (224 vs 315-354)** due to empty runs reducing effective coverage.
+
+**Verdict:** The ranker changes (no PDF + softer prompt) work as intended — 49 kept vs 19 previously. But the empty-run problem is a new regression that must be fixed before re-measuring. Need to add a minimum-findings threshold to count a run as "completed" in the race loop.
+
 ### 2026-02-07 — CONTROL: 1x Gemini 3 Pro, single pass, no shuffle (full PDF)
 
 - **Config**: 1x `gemini-3-pro-preview`, tool-call loop, no shuffle, no race
@@ -225,6 +310,47 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 **Detected (3 matches / 2 unique GT):** inject_003 (tie_break p152 CF — matched twice by two separate findings), inject_008 (sign_flip p182 auditor remuneration)
 
 **Observation:** GPT-5.2 is the weakest performer despite being the most expensive per-token model. Even with the document trimmed to 110 FS pages (vs 252 full), it found only 4 errors in 5 turns. The tool-call loop ran 5 turns but most were near-empty. Known issue: GPT-5.2's multi-turn continuation degrades on large PDFs — it stops calling tools prematurely. At ~$0.47 for 2 unique GT errors, that's **$0.24/error vs Flash ensemble's $0.15/error** with far worse coverage.
+
+### 2026-02-08 — 5x GPT-5.2 ensemble, race 5/5, visual FS-only 150dpi (110 pages)
+
+- **Config**: 5x `openai/gpt-5.2` (launch 5, keep 5), tool-call loop, random shuffle, stagger 3s, rasterized 110 FS pages at 150dpi q70. Ranker: `openai/gpt-5.2`.
+- **Purpose**: Fair comparison of GPT-5.2 as detector — previous tests used old prompt and single runs.
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 15/29 (51.7%)
+- **Precision**: 100% (32/32 raw findings correct, 18/18 ranked findings correct)
+- **F1**: 68.2%
+- **Cost**: $1.63
+- **Time**: 973s
+- **Raw findings**: 32 (4 productive runs: 9, 9, 8, 6 findings; 1 empty run with 0 findings)
+- **Unique after dedupe**: 18 (H:10 M:8 L:0)
+- **Ranker lost 0 GT errors** (15/29 raw → 15/29 ranked)
+
+**Detected (15/29):** inject_003 (tie_break CF), inject_005 (offset BS), inject_006 (magnitude segment), inject_007 (transposition CF), inject_009 (offset dividends), inject_010 (tie_break related co), inject_011 (sign_flip cash), inject_012 (offset maturity), inject_013 (transposition deferred tax), inject_016 (year_swap PL title), inject_018 (currency_swap PL), inject_020 (label_swap_classification BS), inject_023 (label_swap_direction CF), inject_025 (standard_ref HKFRS), inject_026 (label_swap_sign_word receivables)
+
+**Missed (14/29):** inject_000 (tie_break PL), inject_001 (tie_break BS), inject_002 (tie_break SOCIE), inject_004 (offset shareholders funds), inject_008 (sign_flip auditor), inject_014 (magnitude fin summary), inject_015 (note_ref off-by-one), inject_017 (year_swap column header), inject_019 (Continuing→Discontinued), inject_021 (Due from→to), inject_022 (Gross profit→loss), inject_024 (restated label removal), inject_027 (currency_swap p179), inject_028 (year_swap p156)
+
+**Comparison with Flash at same N=5 (from scaling curve):**
+
+| Metric | GPT-5.2 (5 runs) | Flash (5 runs avg) |
+|--------|-------------------|--------------------|
+| Raw GT hit | 15/29 | 19/29 (65.5%) |
+| Raw findings | 32 | ~65 (est.) |
+| Findings/run | 8.0 | ~13 |
+| Cost | $1.63 | ~$0.75 |
+| Cost/GT hit | $0.11 | $0.04 |
+| Precision | 100% | ~80% |
+| Time | 973s | ~400s |
+
+**Key observations:**
+1. **GPT-5.2 is dramatically better than previous test** (15/29 vs 2/29) — the strengthened prompt made a huge difference. Previous test used old prompt + no shuffle + native PDF.
+2. **But Flash still dominates on recall/dollar.** At N=5, Flash averages 19/29 raw vs GPT-5.2's 15/29. Flash is 4x cheaper per GT error found ($0.04 vs $0.11).
+3. **GPT-5.2 has perfect precision** (0 FP across 32 findings) vs Flash's ~80%. Every single finding matches a real injected error. GPT-5.2 is a more cautious, higher-quality detector — it just doesn't look at enough of the document.
+4. **Per-run yield**: 8.0 findings/run (GPT-5.2) vs ~13/run (Flash). GPT-5.2 completes in 2 tool-call turns vs Flash's 5-8, confirming it stops scanning earlier.
+5. **1/5 empty run** (20%) — same pattern as Flash. The model sometimes returns a non-tool-call response immediately.
+6. **Numeric recall**: 9/15 (60%) — misses several tie-break and offset errors that Flash catches. **Text recall**: 6/14 (43%) — catches the obvious ones (year swap in title, currency swap, section mislabel, HKFRS ref) but misses subtler ones (direction words, restated labels).
+7. **At $1.63 for 5 runs, scaling to 25 runs would cost ~$8** for an estimated ~22-24/29 raw recall (extrapolating the independent model). Flash achieves 28/29 raw at ~$4. Not competitive.
+
+**Verdict:** The strengthened prompt rescued GPT-5.2 from "useless" (2/29) to "decent" (15/29), confirming prompt engineering matters across models. But Flash remains 4x more cost-effective for detection. GPT-5.2's strength is precision (100% vs ~80%) — potentially useful as a validator/filter, but not as the primary detector.
 
 ## Written test_Case.pdf (27 errors)
 

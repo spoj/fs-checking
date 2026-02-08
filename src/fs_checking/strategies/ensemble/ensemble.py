@@ -28,10 +28,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ...api import OpenRouterClient
-from ...pdf_utils import get_page_count, shuffle_pdf_pages
+from ...pdf_utils import get_page_count, ring_offset_pages, shuffle_pdf_pages
 
 DEFAULT_DETECT_MODEL = "google/gemini-3-flash-preview"
-DEFAULT_RANK_MODEL = "google/gemini-3-pro-preview"
+DEFAULT_RANK_MODEL = "openai/gpt-5.2"
 DEFAULT_NUM_RUNS = 10
 
 # Pricing per 1M tokens (from OpenRouter, as of Jan 2025)
@@ -172,9 +172,17 @@ falls under these categories is at least MEDIUM, not LOW.
 
 ## Instructions
 
-1. DEDUPLICATE: Merge findings about the exact same error. Keep DIFFERENT errors on \
-the same page as separate entries (e.g. a math error and a label error on the same \
-line are two distinct issues).
+1. DEDUPLICATE: Merge findings ONLY when they describe the exact same error — same \
+page, same numbers, same issue. Err on the side of keeping entries separate.
+   - Two errors on the same page are usually DIFFERENT errors (e.g. a math error and \
+a label error on the same line). Keep them separate.
+   - Two errors mentioning the same line item but on different pages are usually \
+DIFFERENT errors (e.g. a tie error on the face statement vs. a footing error in the \
+note). Keep them separate.
+   - Only merge when the descriptions are clearly restating the identical finding \
+(same page, same category, same numbers).
+   - When in doubt, keep as separate entries. Missing real errors is worse than \
+having duplicates.
 2. RANK as HIGH / MEDIUM / LOW based on the check categories above.
 3. Do NOT validate whether errors are real — assume they are. Just organize them.
 
@@ -229,7 +237,7 @@ async def _run_detection_pass(
     pdf_bytes: bytes,
     pdf_name: str,
     client: OpenRouterClient,
-    shuffle: bool = True,
+    shuffle_mode: str = "random",
     stagger_max: float = 0.0,
     partial_results: dict | None = None,
 ) -> tuple[list[dict], dict]:
@@ -243,7 +251,8 @@ async def _run_detection_pass(
         pdf_bytes: Original PDF bytes (already rasterized if force_visual)
         pdf_name: Filename for the PDF
         client: API client
-        shuffle: If True, shuffle pages using config.seed
+        shuffle_mode: Page reorder mode — "random" (full shuffle), "ring"
+            (circular offset preserving adjacency), or "none"
         stagger_max: Max random delay in seconds before starting (0 = no delay)
         partial_results: Shared dict keyed by run_id. Findings are written here
             as they arrive so they survive task cancellation in race mode.
@@ -256,9 +265,11 @@ async def _run_detection_pass(
         delay = random.uniform(0, stagger_max)
         await asyncio.sleep(delay)
 
-    # Shuffle pages if requested
-    if shuffle:
+    # Reorder pages based on shuffle mode
+    if shuffle_mode == "random":
         pdf_to_send = shuffle_pdf_pages(pdf_bytes, config.seed)
+    elif shuffle_mode == "ring":
+        pdf_to_send = ring_offset_pages(pdf_bytes, config.seed)
     else:
         pdf_to_send = pdf_bytes
 
@@ -342,12 +353,15 @@ async def _run_detection_pass(
 
 async def _rank_and_dedupe(
     candidates: list[dict],
-    pdf_bytes: bytes,
-    pdf_name: str,
     client: OpenRouterClient,
     model: str,
 ) -> tuple[dict, dict]:
-    """Rank and deduplicate findings using PDF context.
+    """Rank and deduplicate findings without PDF context.
+
+    The PDF is intentionally excluded — giving the ranker the document
+    lets it second-guess the detectors and silently drop findings it
+    thinks are wrong.  Without the PDF it can only compare descriptions
+    to each other, which is all dedup needs.
 
     Returns:
         Tuple of (ranked results dict, usage dict)
@@ -369,21 +383,9 @@ async def _rank_and_dedupe(
         candidates_json=json.dumps(candidates_for_prompt, indent=2),
     )
 
-    pdf_b64 = base64.b64encode(pdf_bytes).decode()
-    user_content = [
-        {
-            "type": "file",
-            "file": {
-                "filename": pdf_name,
-                "file_data": f"data:application/pdf;base64,{pdf_b64}",
-            },
-        },
-        {"type": "text", "text": prompt},
-    ]
-
     response = await client.chat(
         model=model,
-        messages=[{"role": "user", "content": user_content}],
+        messages=[{"role": "user", "content": prompt}],
     )
 
     content = response.get("message", {}).get("content", "")
@@ -406,7 +408,7 @@ async def run_ensemble(
     detect_model: str = DEFAULT_DETECT_MODEL,
     rank_model: str = DEFAULT_RANK_MODEL,
     num_runs: int = DEFAULT_NUM_RUNS,
-    shuffle: bool = True,
+    shuffle_mode: str = "random",
     num_launch: int | None = None,
     stagger_max: float = 0.0,
 ) -> dict:
@@ -425,7 +427,8 @@ async def run_ensemble(
         detect_model: Model for detection phase (default: gemini-3-flash)
         rank_model: Model for rank/dedupe phase (default: gemini-3-pro)
         num_runs: Number of detection results to keep (default: 10)
-        shuffle: If True (default), shuffle PDF pages for each run for diversity
+        shuffle_mode: Page reorder mode — "random" (full shuffle, default),
+            "ring" (circular offset preserving adjacency), or "none"
         num_launch: Total runs to launch (default: same as num_runs, no race)
         stagger_max: Max random delay in seconds before each run starts
 
@@ -443,7 +446,7 @@ async def run_ensemble(
     num_pages = get_page_count(pdf_bytes)
     print(f"Pages: {num_pages}", file=sys.stderr)
 
-    mode = "shuffled" if shuffle else "sequential"
+    mode = shuffle_mode if shuffle_mode != "none" else "sequential"
     print(f"Mode: {mode}", file=sys.stderr)
     race_str = (
         f" (launch {num_launch}, keep {num_runs})" if num_launch > num_runs else ""
@@ -485,7 +488,7 @@ async def run_ensemble(
                 pdf_bytes,
                 pdf_path.name,
                 client,
-                shuffle=shuffle,
+                shuffle_mode=shuffle_mode,
                 stagger_max=stagger_max,
                 partial_results=partial_results,
             ),
@@ -553,9 +556,7 @@ async def run_ensemble(
     print(f"PHASE 2: Rank/Dedupe ({rank_model.split('/')[-1]})", file=sys.stderr)
     print(f"{'=' * 60}", file=sys.stderr)
 
-    ranked, rank_usage = await _rank_and_dedupe(
-        all_findings, pdf_bytes, pdf_path.name, client, rank_model
-    )
+    ranked, rank_usage = await _rank_and_dedupe(all_findings, client, rank_model)
     total_cost += _calculate_cost(rank_usage, rank_model)
 
     high = ranked.get("high", [])
@@ -580,7 +581,8 @@ async def run_ensemble(
             "num_launched": num_launch,
             "stagger_max": stagger_max,
             "input_mode": "pdf",
-            "shuffled": shuffle,
+            "shuffled": shuffle_mode != "none",
+            "shuffle_mode": shuffle_mode,
             "num_pages": num_pages,
             "elapsed_seconds": round(elapsed, 1),
             "cost_usd": round(total_cost, 4),
@@ -633,9 +635,10 @@ async def main():
         help="Number of detection runs",
     )
     parser.add_argument(
-        "--no-shuffle",
-        action="store_true",
-        help="Disable page shuffling (all runs see same page order)",
+        "--shuffle-mode",
+        choices=["random", "ring", "none"],
+        default="random",
+        help="Page reorder mode: random (full shuffle), ring (circular offset), none",
     )
     parser.add_argument(
         "--launch",
@@ -657,7 +660,7 @@ async def main():
         args.detect_model,
         args.rank_model,
         args.runs,
-        shuffle=not args.no_shuffle,
+        shuffle_mode=args.shuffle_mode,
         num_launch=args.launch,
         stagger_max=args.stagger,
     )

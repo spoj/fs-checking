@@ -30,8 +30,8 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 @click.option(
     "--rank-model",
     "-r",
-    default="google/gemini-3-pro-preview",
-    help="Model for rank/dedupe phase (default: gemini-3-pro-preview)",
+    default="openai/gpt-5.2",
+    help="Model for rank/dedupe phase (default: gpt-5.2)",
 )
 @click.option(
     "--runs",
@@ -41,9 +41,10 @@ load_dotenv(Path(__file__).parent.parent / ".env")
     help="Number of parallel detection runs (default: 10)",
 )
 @click.option(
-    "--no-shuffle",
-    is_flag=True,
-    help="Disable page shuffling (all runs see same page order)",
+    "--shuffle-mode",
+    type=click.Choice(["random", "ring", "none"]),
+    default="random",
+    help="Page reorder mode: random (full shuffle), ring (circular offset), none",
 )
 def main(
     pdf_file: Path,
@@ -51,7 +52,7 @@ def main(
     detect_model: str,
     rank_model: str,
     runs: int,
-    no_shuffle: bool,
+    shuffle_mode: str,
 ):
     """
     Check IFRS financial statements in a PDF for errors.
@@ -68,9 +69,8 @@ def main(
     # Import here to avoid import errors when just showing help
     from fs_checking.strategies.ensemble import run_ensemble
 
-    mode_str = "PDF shuffled" if not no_shuffle else "PDF sequential"
     click.echo(f"Checking: {pdf_file}")
-    click.echo(f"Mode: {mode_str}")
+    click.echo(f"Mode: {shuffle_mode}")
     click.echo(
         f"Strategy: {runs}x {detect_model.split('/')[-1]} + {rank_model.split('/')[-1]} rank/dedupe"
     )
@@ -82,7 +82,7 @@ def main(
             detect_model=detect_model,
             rank_model=rank_model,
             num_runs=runs,
-            shuffle=not no_shuffle,
+            shuffle_mode=shuffle_mode,
         )
     )
 

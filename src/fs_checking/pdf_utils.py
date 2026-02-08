@@ -159,3 +159,50 @@ def shuffle_pdf_pages(pdf_bytes: bytes, seed: int) -> bytes:
     new_doc.close()
 
     return shuffled_bytes
+
+
+def ring_offset_pages(pdf_bytes: bytes, seed: int) -> bytes:
+    """Rotate PDF pages by a random offset (lossless, preserves adjacency).
+
+    Each seed produces a different random starting page. Pages are kept in
+    their original order but shifted circularly — e.g. for a 10-page doc
+    with offset 7: [7, 8, 9, 0, 1, 2, 3, 4, 5, 6].
+
+    This preserves page adjacency (table → note references stay close)
+    while varying what the model sees first across runs, combating
+    attention fading on long documents.
+
+    Args:
+        pdf_bytes: Original PDF content
+        seed: Random seed — determines the starting offset
+
+    Returns:
+        New PDF bytes with circularly rotated page order
+    """
+    import random
+
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    num_pages = len(doc)
+
+    if num_pages <= 1:
+        result = doc.tobytes()
+        doc.close()
+        return result
+
+    # Pick a random offset from seed
+    random.seed(seed)
+    offset = random.randint(0, num_pages - 1)
+
+    # Build ring order: [offset, offset+1, ..., n-1, 0, 1, ..., offset-1]
+    ring_order = [(offset + i) % num_pages for i in range(num_pages)]
+
+    new_doc = fitz.open()
+    for page_num in ring_order:
+        new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+
+    result = new_doc.tobytes()
+
+    doc.close()
+    new_doc.close()
+
+    return result

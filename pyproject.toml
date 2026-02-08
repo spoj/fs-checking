@@ -25,3 +25,8 @@ packages = ["src/fs_checking", "scripts"]
 
 [tool.hatch.build.targets.sdist]
 include = ["src", "scripts"]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.10.8",
+]

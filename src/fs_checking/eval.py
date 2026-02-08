@@ -147,21 +147,27 @@ async def evaluate_with_llm(
     unmatched_model = result.get("unmatched_model", [])
     unmatched_gt = result.get("unmatched_gt", [])
 
-    tp = len(matches)
-    fp = len(unmatched_model)
-    fn = len(unmatched_gt)
+    # Count unique GT issues matched (not match pairs — multiple model
+    # findings can match the same GT issue, inflating TP if counted naively)
+    unique_gt_matched = len(set(m["gt_id"] for m in matches))
+    unique_model_matched = len(set(m["model_id"] for m in matches))
+    total_gt = unique_gt_matched + len(unmatched_gt)
+    total_model = unique_model_matched + len(unmatched_model)
 
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    precision = unique_model_matched / total_model if total_model > 0 else 0
+    recall = unique_gt_matched / total_gt if total_gt > 0 else 0
     f1 = (
         2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
     )
 
     # Add scores to result
     result["scores"] = {
-        "true_positives": tp,
-        "false_positives": fp,
-        "false_negatives": fn,
+        "gt_matched": unique_gt_matched,
+        "gt_total": total_gt,
+        "model_matched": unique_model_matched,
+        "model_total": total_model,
+        "false_positives": len(unmatched_model),
+        "false_negatives": len(unmatched_gt),
         "precision": round(precision, 3),
         "recall": round(recall, 3),
         "f1": round(f1, 3),
@@ -187,12 +193,14 @@ def print_eval_report(result: dict):
     print("=" * 60)
 
     print(f"\n📊 SCORES")
-    print(f"   Precision: {scores['precision']:.1%}")
-    print(f"   Recall:    {scores['recall']:.1%}")
-    print(f"   F1 Score:  {scores['f1']:.1%}")
     print(
-        f"\n   TP: {scores['true_positives']} | FP: {scores['false_positives']} | FN: {scores['false_negatives']}"
+        f"\n   Recall:    {scores['recall']:.1%}  ({scores['gt_matched']}/{scores['gt_total']} GT errors detected)"
     )
+    print(
+        f"   Precision: {scores['precision']:.1%}  ({scores['model_matched']}/{scores['model_total']} model findings correct)"
+    )
+    print(f"   F1 Score:  {scores['f1']:.1%}")
+    print(f"\n   FP: {scores['false_positives']} | FN: {scores['false_negatives']}")
 
     print(f"\n✅ MATCHED ({len(matches)})")
     for m in matches:
