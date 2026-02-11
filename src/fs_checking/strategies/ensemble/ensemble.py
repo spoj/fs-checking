@@ -159,6 +159,121 @@ just as important as math errors. Read every label and reference, don't just che
 Log each error as you find it using the log_issue tool.
 """
 
+DETECT_PROMPT_STRUCTURED = """\
+You are a financial statement auditor performing a systematic error detection review.
+You MUST complete ALL THREE passes below. Do NOT stop after one pass. Continue \
+calling log_issue until every page has been checked through all passes.
+
+IMPORTANT: Pages may appear in shuffled order. Use the page numbers shown in the \
+document headers/footers (e.g., "Page 8" or "8" at top of page), NOT the PDF position.
+
+═══════════════════════════════════════════════════════════════
+PASS 1 — FACE STATEMENTS (Income Statement, Balance Sheet, SOCIE, Cash Flow)
+═══════════════════════════════════════════════════════════════
+
+For EACH face statement, perform these checks IN ORDER:
+
+### 1A. Income Statement / Profit & Loss
+Locate the P&L. Read every line. Verify:
+- Revenue − Cost of sales = Gross profit (check label: should say "profit" \
+if positive, "loss" if negative)
+- Gross profit − Operating expenses = Operating profit
+- Operating profit + Finance income − Finance costs = Profit before tax
+- Profit before tax − Tax = Profit for the year
+- Check column headers: do the years match the reporting period?
+- Check currency label (e.g., HK$'000)
+- Check section heading: "Continuing operations" vs "Discontinued operations" — \
+is the label correct for the content?
+- For EVERY line with a note reference "(Note X)", verify Note X actually \
+discusses that line item
+
+### 1B. Balance Sheet / Statement of Financial Position
+Locate the BS. Read every line. Verify:
+- Non-current assets subtotal = sum of all non-current asset lines
+- Current assets subtotal = sum of all current asset lines
+- Total assets = Non-current + Current assets
+- Similarly for liabilities: Non-current + Current = Total liabilities
+- Total assets = Total liabilities + Total equity
+- Check column headers: do the years match? Is "(Restated)" present on \
+comparative columns that were restated?
+- Check labels: "Due from" (asset) vs "Due to" (liability) — is the \
+direction word correct?
+- Check currency label consistency
+- For EVERY line with a note reference, verify the note number is correct
+
+### 1C. Statement of Changes in Equity (SOCIE)
+Locate the SOCIE. Verify:
+- Opening balance + changes during year = Closing balance (for EACH column)
+- Total comprehensive income ties to the OCI statement
+- Dividends, share buybacks, other movements foot correctly
+- Column headers and dates are consistent
+
+### 1D. Cash Flow Statement
+Locate the Cash Flow Statement. Verify:
+- Operating + Investing + Financing = Net change in cash
+- Net change + Opening cash = Closing cash
+- Check direction words: "inflow" vs "outflow" must match the sign
+- Operating cash flow reconciliation (if shown) ties to profit before tax
+- Individual line items foot to subtotals
+
+After completing Pass 1, call log_issue for every error found, then proceed \
+IMMEDIATELY to Pass 2. DO NOT STOP HERE.
+
+═══════════════════════════════════════════════════════════════
+PASS 2 — NOTES TO THE FINANCIAL STATEMENTS
+═══════════════════════════════════════════════════════════════
+
+For EACH note that contains a numerical table:
+- Verify all subtotals and totals foot correctly (components sum to total)
+- For rollforward schedules (PPE, provisions, receivables impairment): \
+Opening + Additions − Disposals ± Transfers = Closing
+- Verify the note total ties back to the corresponding face statement line
+- Check currency labels match the face statements
+- Check years in column headers
+
+Pay special attention to:
+- Segment notes: do segment totals reconcile to group totals?
+- Related party notes: do amounts tie to face statement disclosures?
+- Financial summary pages: do key figures match the face statements?
+
+After completing Pass 2, call log_issue for every error found, then proceed \
+IMMEDIATELY to Pass 3. DO NOT STOP HERE.
+
+═══════════════════════════════════════════════════════════════
+PASS 3 — PRESENTATION SWEEP (page by page)
+═══════════════════════════════════════════════════════════════
+
+Go through EVERY page and check this checklist:
+
+□ Column header years — correct and consistent?
+□ Currency labels (US$, HK$, EUR) — consistent within each statement?
+□ Unit labels ('000, millions) — consistent across columns?
+□ "(Restated)" / "(Re-presented)" — present on all comparative columns that \
+should have it?
+□ Section headings — match content? (e.g., "Non-current" section has no \
+current items)
+□ "Continuing" vs "Discontinued" labels — correct?
+□ Direction words: "Due from" vs "Due to", "inflow" vs "outflow" — correct?
+□ Sign words: "profit" vs "loss", "receivable" vs "payable" — match the values?
+□ Note references "(Note X)" — does Note X actually discuss that line item?
+□ Accounting standard references (IFRS/IAS/HKFRS numbers) — correct standard \
+for the topic?
+□ Note numbering — sequential with no gaps?
+□ Any other presentation anomalies
+
+═══════════════════════════════════════════════════════════════
+
+## Output Instructions
+
+- Each time you find an error, call the `log_issue` tool IMMEDIATELY
+- Be thorough — missing errors is worse than false positives
+- Use DOCUMENT page numbers (from headers), not PDF position
+- You MUST complete all three passes before stopping
+- After all three passes, write a brief summary confirming you reviewed all pages
+
+Log each error as you find it using the log_issue tool.
+"""
+
 RANK_DEDUPE_PROMPT = """\
 Deduplicate and rank the following {num_candidates} error findings from a financial \
 statement review. Use the check categories below to judge severity — anything that \
@@ -232,6 +347,13 @@ def _calculate_cost(usage: dict, model: str) -> float:
     ) / 1_000_000
 
 
+def _get_detect_prompt(prompt_style: str) -> str:
+    """Return the detection prompt for the given style."""
+    if prompt_style == "structured":
+        return DETECT_PROMPT_STRUCTURED
+    return DETECT_PROMPT
+
+
 async def _run_detection_pass(
     config: RunConfig,
     pdf_bytes: bytes,
@@ -240,6 +362,7 @@ async def _run_detection_pass(
     shuffle_mode: str = "random",
     stagger_max: float = 0.0,
     partial_results: dict | None = None,
+    prompt_style: str = "default",
 ) -> tuple[list[dict], dict]:
     """Run a single detection pass on PDF using log_issue tool calls.
 
@@ -256,6 +379,7 @@ async def _run_detection_pass(
         stagger_max: Max random delay in seconds before starting (0 = no delay)
         partial_results: Shared dict keyed by run_id. Findings are written here
             as they arrive so they survive task cancellation in race mode.
+        prompt_style: Detection prompt variant — "default" or "structured"
 
     Returns:
         Tuple of (findings list, aggregated usage dict)
@@ -275,6 +399,7 @@ async def _run_detection_pass(
 
     # Build message with PDF
     pdf_b64 = base64.b64encode(pdf_to_send).decode()
+    detect_prompt = _get_detect_prompt(prompt_style)
     user_content: list[dict] = [
         {
             "type": "file",
@@ -283,7 +408,7 @@ async def _run_detection_pass(
                 "file_data": f"data:application/pdf;base64,{pdf_b64}",
             },
         },
-        {"type": "text", "text": DETECT_PROMPT},
+        {"type": "text", "text": detect_prompt},
     ]
 
     messages = [{"role": "user", "content": user_content}]
@@ -355,6 +480,7 @@ async def _rank_and_dedupe(
     candidates: list[dict],
     client: OpenRouterClient,
     model: str,
+    detect_prompt: str | None = None,
 ) -> tuple[dict, dict]:
     """Rank and deduplicate findings without PDF context.
 
@@ -366,6 +492,9 @@ async def _rank_and_dedupe(
     Returns:
         Tuple of (ranked results dict, usage dict)
     """
+    if detect_prompt is None:
+        detect_prompt = DETECT_PROMPT
+
     # Format candidates
     candidates_for_prompt = [
         {
@@ -379,7 +508,7 @@ async def _rank_and_dedupe(
 
     prompt = RANK_DEDUPE_PROMPT.format(
         num_candidates=len(candidates),
-        detect_prompt=DETECT_PROMPT,
+        detect_prompt=detect_prompt,
         candidates_json=json.dumps(candidates_for_prompt, indent=2),
     )
 
@@ -411,6 +540,8 @@ async def run_ensemble(
     shuffle_mode: str = "random",
     num_launch: int | None = None,
     stagger_max: float = 0.0,
+    prompt_style: str = "default",
+    timeout: float = 1800.0,
 ) -> dict:
     """Run ensemble detection with rank/dedupe.
 
@@ -431,6 +562,9 @@ async def run_ensemble(
             "ring" (circular offset preserving adjacency), or "none"
         num_launch: Total runs to launch (default: same as num_runs, no race)
         stagger_max: Max random delay in seconds before each run starts
+        prompt_style: Detection prompt variant — "default" or "structured"
+            (multi-pass procedure, better for models that stop early)
+        timeout: HTTP client timeout in seconds (default: 1800)
 
     Returns:
         Result dict with prioritized findings and metadata
@@ -447,7 +581,7 @@ async def run_ensemble(
     print(f"Pages: {num_pages}", file=sys.stderr)
 
     mode = shuffle_mode if shuffle_mode != "none" else "sequential"
-    print(f"Mode: {mode}", file=sys.stderr)
+    print(f"Mode: {mode}, Prompt: {prompt_style}", file=sys.stderr)
     race_str = (
         f" (launch {num_launch}, keep {num_runs})" if num_launch > num_runs else ""
     )
@@ -459,7 +593,7 @@ async def run_ensemble(
         file=sys.stderr,
     )
 
-    client = OpenRouterClient(reasoning_effort="high", timeout=1800.0)
+    client = OpenRouterClient(reasoning_effort="high", timeout=timeout)
     total_start = time.time()
     total_cost = 0.0
 
@@ -491,6 +625,7 @@ async def run_ensemble(
                 shuffle_mode=shuffle_mode,
                 stagger_max=stagger_max,
                 partial_results=partial_results,
+                prompt_style=prompt_style,
             ),
             name=config.run_id,
         )
@@ -556,7 +691,9 @@ async def run_ensemble(
     print(f"PHASE 2: Rank/Dedupe ({rank_model.split('/')[-1]})", file=sys.stderr)
     print(f"{'=' * 60}", file=sys.stderr)
 
-    ranked, rank_usage = await _rank_and_dedupe(all_findings, client, rank_model)
+    ranked, rank_usage = await _rank_and_dedupe(
+        all_findings, client, rank_model, detect_prompt=_get_detect_prompt(prompt_style)
+    )
     total_cost += _calculate_cost(rank_usage, rank_model)
 
     high = ranked.get("high", [])
@@ -583,6 +720,7 @@ async def run_ensemble(
             "input_mode": "pdf",
             "shuffled": shuffle_mode != "none",
             "shuffle_mode": shuffle_mode,
+            "prompt_style": prompt_style,
             "num_pages": num_pages,
             "elapsed_seconds": round(elapsed, 1),
             "cost_usd": round(total_cost, 4),
@@ -652,6 +790,18 @@ async def main():
         default=0.0,
         help="Max random delay in seconds before each run starts (default: 0)",
     )
+    parser.add_argument(
+        "--prompt-style",
+        choices=["default", "structured"],
+        default="default",
+        help="Detection prompt variant: default (standard), structured (multi-pass, better for GPT-5.2)",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=1800.0,
+        help="HTTP client timeout in seconds (default: 1800 = 30 min)",
+    )
     args = parser.parse_args()
 
     await run_ensemble(
@@ -663,6 +813,8 @@ async def main():
         shuffle_mode=args.shuffle_mode,
         num_launch=args.launch,
         stagger_max=args.stagger,
+        prompt_style=args.prompt_style,
+        timeout=args.timeout,
     )
 
 

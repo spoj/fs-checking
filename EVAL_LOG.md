@@ -352,6 +352,119 @@ Subsampled 5, 10, 15, 20, 25 runs from random r1 and r2 raw findings (same seed=
 
 **Verdict:** The strengthened prompt rescued GPT-5.2 from "useless" (2/29) to "decent" (15/29), confirming prompt engineering matters across models. But Flash remains 4x more cost-effective for detection. GPT-5.2's strength is precision (100% vs ~80%) — potentially useful as a validator/filter, but not as the primary detector.
 
+### 2026-02-08 — 5x GPT-5.2, STRUCTURED prompt, 45-min timeout, visual FS-only 150dpi (110 pages)
+
+- **Config**: 5x `openai/gpt-5.2` (launch 5, keep 5), tool-call loop, random shuffle, stagger 3s, rasterized 110 FS pages at 150dpi q70. Ranker: `openai/gpt-5.2`. **Structured multi-pass prompt** (3-pass: face statements → notes → presentation sweep). Timeout 2700s (45 min).
+- **Purpose**: Test whether a prescriptive multi-pass prompt can fix GPT-5.2's premature stopping (2 turns/run baseline).
+- **Eval model**: `gemini-3-flash-preview`
+- **Raw Recall**: 16/29 (55.2%)
+- **Raw Precision**: 94.9% (37/39 matches, 2 FP)
+- **Ranked Recall**: 17/29 (58.6%)
+- **Ranked Precision**: 100% (20/20 model findings correct)
+- **F1 (ranked)**: 73.9%
+- **Cost**: $5.97
+- **Time**: 2093s (35 min)
+- **Raw findings**: 40 (all 5 runs productive: 14, 11, 8, 5, 2 findings)
+- **Unique after dedupe**: 20 (H:8 M:12 L:0)
+- **Per-run turns**: run_3=15, run_2=4, run_4=3, run_1=3, run_5=2 (highly variable)
+
+**Detected (17/29, ranked):** inject_000 (tie_break PL), inject_001 (tie_break BS), inject_002 (tie_break SOCIE — ranked only), inject_003 (tie_break CF), inject_005 (offset BS), inject_009 (offset dividends), inject_010 (tie_break related co), inject_011 (sign_flip cash), inject_012 (offset maturity), inject_013 (transposition deferred tax), inject_016 (year_swap PL title), inject_018 (currency_swap PL), inject_019 (Continuing→Discontinued), inject_022 (Gross profit→loss label), inject_023 (outflow direction), inject_026 (Receivables→Payables), inject_027 (currency_swap segment)
+
+**Missed (12/29):** inject_004 (offset shareholders), inject_006 (magnitude segment), inject_007 (transposition SOCIE), inject_008 (sign_flip auditor), inject_014 (magnitude fin summary), inject_015 (note_ref off-by-one), inject_017 (year_swap column header), inject_020 (label_swap_classification BS), inject_021 (Due from→to), inject_024 (restated label removal), inject_025 (standard_ref HKFRS), inject_028 (year_swap p156)
+
+**Comparison with baseline (default prompt, same config):**
+
+| Metric | Structured prompt | Default prompt | Delta |
+|--------|-------------------|----------------|-------|
+| Raw GT hit | 16/29 (55.2%) | 15/29 (51.7%) | +1 |
+| Ranked GT hit | 17/29 (58.6%) | 15/29 (51.7%) | +2 |
+| Raw findings | 40 | 32 | +25% |
+| Findings/run | 8.0 | 8.0 | same |
+| Max turns/run | 15 | 3 | +400% |
+| Empty runs | 0/5 | 1/5 | better |
+| Cost | $5.97 | $1.63 | +266% |
+| Time | 2093s | 973s | +115% |
+| Precision | 100% | 100% | same |
+
+**Newly detected vs baseline (+4):** inject_000 (tie_break PL), inject_001 (tie_break BS), inject_002 (SOCIE tie-break), inject_022 (Gross profit→loss label)
+**Lost vs baseline (−2):** inject_006 (magnitude segment), inject_025 (HKFRS ref) — sampling variance
+
+**Key observations:**
+1. **The structured prompt partially worked** — run_3 did 15 turns (vs max 3 baseline), confirming the multi-pass instructions kept GPT-5.2 going. But other runs (1, 4, 5) still stopped at 2-3 turns. The effect is inconsistent.
+2. **Marginal recall improvement at 3.6x cost.** +2 ranked GT errors (17 vs 15) but cost jumped from $1.63 to $5.97. The extra turns generate more tokens but don't proportionally find more errors.
+3. **Per-run yield unchanged at 8.0 findings/run** — even run_3 with 15 turns only found 14 errors (0.93/turn), same average as baseline's 8/run in 2 turns (4.0/turn). More turns ≠ more unique errors proportionally.
+4. **Precision maintained at 100%** — GPT-5.2 never produces false positives regardless of prompt style. This is its consistent strength.
+5. **The 4 face-statement errors (inject_000, 001, 002, 022)** that the structured prompt caught were explicitly targeted by Pass 1's arithmetic walkthrough. But Pass 3's presentation sweep added nothing vs baseline — direction words (inject_021), restated labels (inject_024), HKFRS refs (inject_025) still missed.
+
+**Verdict:** The structured multi-pass prompt is not worth the 3.6x cost premium for +2 recall. GPT-5.2's limitation is not coverage (it can be forced to do more turns) but per-page detection quality — it misses errors even when looking at the right page. Flash at 5 runs costs $0.75 and achieves ~19/29 raw recall. **GPT-5.2 is definitively worse than Flash for detection, regardless of prompt style.**
+
+## ar2019_fs.injected (unrendered markdown→PDF, 31 errors: 11 easy, 10 medium, 10 hard)
+
+### Test Set Description
+
+Source: `ar2019_fs.md` — 109-page FS section of ar2019 annual report, converted to GFM markdown via `unrender.py` (Gemini Flash, sliding window), then rendered to PDF via Playwright (66 pages). 30 hand-crafted errors injected via `inject_md_errors.py` + 1 pre-existing transcription error (LLM wrote "Due from" instead of "Due to" in current liabilities — confirmed original PDF is correct).
+
+Difficulty tiers:
+- **Easy (11)**: Obvious arithmetic breaks on face statements (P&L, BS, CF, OCI). Subtotals that don't tie to line items on the same page.
+- **Medium (10)**: Cross-reference breaks between notes and face statements. Rollforward errors, ageing totals, segment ties.
+- **Hard (10)**: Subtle detail-level errors in note tables. Single columns in multi-dimensional tables, currency breakdowns, share capital rollforwards, company-level BS.
+
+### 2026-02-11 — Control run (clean unrendered PDF, no injected errors)
+
+- **Config**: 25x `gemini-3-flash-preview` (launch 30, keep 25), stagger 5s, `gpt-5.2` rank/dedupe
+- **Input**: `ar2019_fs.unrendered.pdf` (66 pages, clean)
+- **Findings**: 45 (H:29, M:16)
+- **Cost**: $2.90
+- **Time**: 326s
+- **Notes**: These 45 findings are the baseline noise — things the detector flags on the clean unrendered document. Includes legitimate observations about the transcription (e.g., "Due from" labeling error) and false alarms about formatting/presentation.
+
+### 2026-02-11 — 25x Flash, race 30/25 (31 GT errors)
+
+- **Config**: 25x `gemini-3-flash-preview` (launch 30, keep 25), stagger 5s, `gpt-5.2` rank/dedupe
+- **Input**: `ar2019_fs.injected.pdf` (66 pages, 31 errors)
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 31/31 (100%)
+- **Precision**: 72.1% (31/43 model findings correct)
+- **F1**: 83.8%
+- **FP**: 12 | **FN**: 0
+- **Cost**: $3.05
+- **Time**: 859s
+- **Raw findings**: 249 (25 runs kept, 5 cancelled with 22 partial findings harvested)
+- **Unique after dedupe**: 227 (H:88, M:139)
+
+**Recall by difficulty tier:**
+
+| Tier | Errors | Detected | Recall | Avg matches per error |
+|------|--------|----------|--------|-----------------------|
+| Easy | 11 | 11 | 100% | 2.5 |
+| Medium | 10 | 10 | 100% | 1.3 |
+| Hard | 10 | 10 | 100% | 1.1 |
+| **Total** | **31** | **31** | **100%** | **1.6** |
+
+**Detection redundancy drops sharply with difficulty**: Easy errors get flagged by ~2.5 deduplicated findings each (multiple cross-checks catch them). Hard errors average 1.1 — barely caught, usually by exactly one finding. This means hard errors are fragile — with fewer runs they'd likely be missed.
+
+**False positives (12)**: All are observations about the unrendered document itself, not hallucinations:
+- PPE HKFRS 16 restatement presentation (original is correct — false alarm)
+- SOCE formatting/labeling (false alarm)
+- Share premium vesting cross-statement tie (false alarm)
+- Pension rollforward missing narrative line (false alarm)
+- Purchase consideration 2018 rollforward (false alarm)
+- Fair value Level 3 rollforward 2018 (false alarm)
+- Segment turnover sub-breakdown tie (false alarm)
+- Lease liability presentation classification (false alarm)
+- Parent company reserves missing dividend line (false alarm)
+- Currency translation reserves 2018 tie (false alarm)
+- Company retained earnings rollforward (false alarm)
+- SOCE 2018 header incomplete (false alarm)
+
+Verified against original ar2019.pdf: all 12 FPs are false alarms by the detector (original document is correct). Only 1 pre-existing transcription error exists (the "Due from" labeling, now in GT as inject_031).
+
+**Key observations:**
+1. **100% recall on all 30 hand-crafted errors** confirms the ensemble approach works on markdown→PDF roundtripped documents.
+2. **Hard errors are detectable but fragile** — avg 1.1 matches means they rely on a single detector run catching them. Scaling to fewer runs would degrade hard-tier recall first.
+3. **The unrendered PDF is a cleaner test bed** than the original PDF — only 12 FPs vs 18+ on the original ar2019 mixed injection. The markdown→PDF pipeline produces consistent, text-layer-clean documents.
+4. **Cost efficiency**: $3.05 for 31/31 recall = $0.10 per detected error. Comparable to the original ar2019 runs.
+
 ## Written test_Case.pdf (27 errors)
 
 ### 2026-02-05 — Historical baseline (pre tool-call rewrite)

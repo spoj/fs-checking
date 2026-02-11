@@ -10,6 +10,8 @@ dependencies = [
     "click>=8.1",
     "jsonpatch>=1.33",
     "pillow>=12.1.0",
+    "playwright>=1.40",
+    "markdown>=3.10.2",
 ]
 
 [project.scripts]
