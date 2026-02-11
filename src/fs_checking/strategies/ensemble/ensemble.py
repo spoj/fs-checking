@@ -318,63 +318,30 @@ Return JSON only:
 """
 
 
-VISION_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "vision",
-        "description": (
-            "Ask a vision model to look at the ENTIRE PDF document and answer "
-            "your query. The model reads all pages and reports exactly what it "
-            "sees. Use this to verify numbers, labels, cross-references, or "
-            "any claim about the document."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": (
-                        "What to look for. Be specific: "
-                        "'What is the gross profit for 2019 in the P&L? "
-                        "List the exact numbers for Turnover and COGS.'"
-                    ),
-                },
-            },
-            "required": ["query"],
-        },
-    },
-}
-
 VALIDATE_PROMPT = """\
-You are a financial statement auditor VALIDATING detection findings.
+You are a financial statement auditor. The attached PDF is a set of financial statements \
+that MAY CONTAIN ERRORS — that is the whole point of this audit.
 
-You have {num_candidates} candidate errors from an automated detection scan. \
-Your job is to deduplicate, verify each finding by looking at the actual PDF, \
-and produce a final clean list of confirmed errors.
+An automated scan produced {num_candidates} candidate errors (listed below). \
+Your job: look at the actual PDF, verify each candidate, deduplicate, and return \
+only the confirmed errors.
 
 ## Candidates
 
 {candidates_json}
 
-## Tools
+## Instructions
 
-- **vision(query)**: Ask a vision model to read the ENTIRE PDF and answer your query. \
-The model sees all pages. Use this to verify numbers, labels, cross-references, or \
-any claim. You can batch multiple vision calls in a single turn — they execute in parallel.
+1. For each candidate, check the relevant page/table in the PDF.
+2. Verify the numbers: read every component, compute the sum yourself, compare \
+to the printed total. Even tiny differences (e.g. off by 9 on a million) are real errors.
+3. Merge duplicates — keep one entry per distinct error.
+4. Drop false positives — if the PDF shows the numbers are actually correct.
+5. Err on the side of keeping. Missing real errors is worse than a false positive.
 
-## Workflow
+## Output
 
-1. Group candidates by section/topic for efficient checking
-2. Call `vision(query=...)` to verify each group — ask specific questions about the \
-numbers the candidates claim are wrong. Batch multiple vision calls per turn.
-3. Based on the vision evidence, decide which candidates are real errors and which \
-are false positives or duplicates.
-4. When done verifying, output your final answer as a JSON array.
-
-## Final Output
-
-After all verification is complete, output a JSON array of confirmed, deduplicated errors. \
-Each entry has only two fields:
+Return ONLY a JSON array of confirmed errors. No preamble, no commentary — just the array.
 
 ```json
 [
@@ -382,75 +349,7 @@ Each entry has only two fields:
   ...
 ]
 ```
-
-- **location**: Where in the document (e.g. "Page 12, Note 21 Trade and Other Receivables, currency breakdown table")
-- **description**: Clear description with the specific numbers showing the discrepancy \
-(e.g. "Sum of currency components (815,732 + 26,329 + ...) = 1,157,953 but total shows 1,157,971")
-
-## Rules
-
-- Use vision liberally — it's cheap. Batch multiple calls per turn.
-- Merge duplicates: if multiple candidates describe the same underlying error, output it once.
-- Reject false positives: if vision shows the numbers are actually correct, drop it.
-- Err on the side of keeping — missing real errors is worse than keeping a false positive.
-- Do NOT include IDs, priorities, or categories. Just location and description.
 """
-
-
-async def _vision_call(
-    query: str,
-    pdf_bytes: bytes,
-    num_pages: int,
-    client: OpenRouterClient,
-    vision_model: str,
-) -> str:
-    """Send the full PDF to Flash with a query. Returns Flash's answer.
-
-    Uses low reasoning effort to prevent the model from "thinking" numbers
-    into consistency — we want it to read and report, not rationalize.
-    """
-    pdf_b64 = base64.b64encode(pdf_bytes).decode()
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are a precise document reader for a financial statement audit. "
-                "This document MAY CONTAIN ERRORS — that is the whole point of the audit. "
-                "Your job is to report EXACTLY what you see on the page, not what you think "
-                "should be there. NEVER adjust, round, or correct numbers to make them consistent. "
-                "If a total does not match the sum of its components, report both the individual "
-                "numbers AND the printed total exactly as shown. Do NOT assume the total is correct. "
-                "Do NOT recompute numbers to fill gaps — only report digits you can read on the page."
-            ),
-        },
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "file",
-                    "file": {
-                        "filename": "document.pdf",
-                        "file_data": f"data:application/pdf;base64,{pdf_b64}",
-                    },
-                },
-                {
-                    "type": "text",
-                    "text": (
-                        f"This is a {num_pages}-page financial statement document.\n\n"
-                        f"Question: {query}\n\n"
-                        "IMPORTANT: Report numbers EXACTLY as printed. Do not correct or "
-                        "adjust any figures. If you see a table, quote every row verbatim."
-                    ),
-                },
-            ],
-        },
-    ]
-
-    resp = await client.chat(
-        model=vision_model, messages=messages, reasoning_effort="low"
-    )
-    answer = resp.get("message", {}).get("content", "")
-    return answer or "(no response)"
 
 
 async def _validate_findings(
@@ -458,31 +357,22 @@ async def _validate_findings(
     pdf_bytes: bytes,
     client: OpenRouterClient,
     validator_model: str,
-    vision_model: str,
-    detect_prompt: str | None = None,
-    max_turns: int = 120,
 ) -> tuple[list[dict], dict]:
-    """Validate and deduplicate findings using a validator model with vision tool.
-
-    The validator uses vision(query) to check findings against the PDF,
-    then outputs a final JSON array of confirmed, deduplicated issues.
+    """Validate findings: single-shot GPT-5.2 call with full PDF + candidates.
 
     Args:
         candidates: Raw detection findings to validate
         pdf_bytes: Original PDF bytes
         client: API client
-        validator_model: Model for the validator (e.g., GPT-5.2)
-        vision_model: Model for vision tool calls (e.g., Gemini Flash)
-        detect_prompt: Detection prompt for context (unused, kept for API compat)
-        max_turns: Max conversation turns
+        validator_model: Model for validation (e.g., GPT-5.2)
 
     Returns:
         Tuple of (list of validated issues, usage dict)
     """
-    from ...agent_loop import run_agent_loop
     from ...pdf_utils import get_page_count
 
     num_pages = get_page_count(pdf_bytes)
+    pdf_b64 = base64.b64encode(pdf_bytes).decode()
 
     candidates_for_prompt = [
         {
@@ -499,53 +389,38 @@ async def _validate_findings(
         candidates_json=json.dumps(candidates_for_prompt, indent=2),
     )
 
-    messages: list[dict] = [{"role": "user", "content": prompt}]
-    tools = [VISION_TOOL]
-
-    vision_calls = 0
-
-    async def call_model(msgs: list[dict]) -> tuple[dict, dict]:
-        resp = await client.chat(model=validator_model, messages=msgs, tools=tools)
-        return resp.get("message", {}), resp.get("usage", {})
-
-    async def execute_tool(name: str, args: dict) -> str:
-        nonlocal vision_calls
-
-        if name == "vision":
-            query = args.get("query", "")
-            vision_calls += 1
-            print(
-                f"      vision('{query[:80]}...')",
-                file=sys.stderr,
-            )
-            return await _vision_call(
-                query,
-                pdf_bytes,
-                num_pages,
-                client,
-                vision_model,
-            )
-        else:
-            return json.dumps({"error": f"unknown tool: {name}"})
-
-    result = await run_agent_loop(
-        call_model=call_model,
-        tool_executor=execute_tool,
-        initial_messages=messages,
-        max_iterations=max_turns,
-    )
+    messages: list[dict] = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "file",
+                    "file": {
+                        "filename": "financial_statements.pdf",
+                        "file_data": f"data:application/pdf;base64,{pdf_b64}",
+                    },
+                },
+                {
+                    "type": "text",
+                    "text": prompt,
+                },
+            ],
+        },
+    ]
 
     print(
-        f"    Validation complete: "
-        f"{vision_calls} vision calls, {result.iterations} turns",
+        f"    Sending {num_pages}-page PDF + {len(candidates)} candidates to {validator_model}...",
         file=sys.stderr,
     )
 
-    # Parse the final message as JSON array
+    resp = await client.chat(model=validator_model, messages=messages)
+    usage = resp.get("usage", {})
+    content = resp.get("message", {}).get("content", "")
+
+    # Parse JSON array from response
     issues = []
     try:
-        # Look for JSON array in the final message
-        json_match = re.search(r"\[[\s\S]*\]", result.final_message)
+        json_match = re.search(r"\[[\s\S]*\]", content)
         if json_match:
             issues = json.loads(json_match.group())
     except json.JSONDecodeError as e:
@@ -565,7 +440,12 @@ async def _validate_findings(
             for c in candidates
         ]
 
-    return issues, result.usage
+    print(
+        f"    Validation complete: {len(candidates)} candidates -> {len(issues)} confirmed",
+        file=sys.stderr,
+    )
+
+    return issues, usage
 
 
 @dataclass
@@ -763,15 +643,14 @@ async def run_ensemble(
     prompt_style: str = "default",
     timeout: float = 1800.0,
     validate: bool = False,
-    vision_model: str = DEFAULT_DETECT_MODEL,
 ) -> dict:
     """Run ensemble detection with rank/dedupe or validation.
 
     Pipeline:
     1. Detection: launch N parallel runs, keep first K to complete
     2a. Rank/Dedupe (default): text-only dedup and ranking
-    2b. Validate (--validate): GPT-5.2 validates each finding using a
-        vision(pages, query) tool backed by Gemini Flash
+    2b. Validate (--validate): single-shot GPT-5.2 with full PDF verifies
+        each candidate finding and returns confirmed errors
 
     Accepts any PDF — native or pre-rasterized (via ``rasterize_pdf``).
     For visual-only mode, rasterize offline first and pass the result.
@@ -780,7 +659,7 @@ async def run_ensemble(
         pdf_path: Path to PDF file (native or pre-rasterized)
         output_path: Output JSON path (default: <pdf>.ensemble.json)
         detect_model: Model for detection phase (default: gemini-3-flash)
-        rank_model: Model for rank/dedupe phase (default: gpt-5.2)
+        rank_model: Model for rank/dedupe or validation (default: gpt-5.2)
         num_runs: Number of detection results to keep (default: 10)
         shuffle_mode: Page reorder mode — "random" (full shuffle, default),
             "ring" (circular offset preserving adjacency), or "none"
@@ -789,8 +668,7 @@ async def run_ensemble(
         prompt_style: Detection prompt variant — "default" or "structured"
             (multi-pass procedure, better for models that stop early)
         timeout: HTTP client timeout in seconds (default: 1800)
-        validate: Use vision-powered validation instead of text-only rank/dedupe
-        vision_model: Model for vision tool calls during validation
+        validate: Use single-shot validation instead of text-only rank/dedupe
 
     Returns:
         Result dict with prioritized findings and metadata
@@ -813,7 +691,7 @@ async def run_ensemble(
     )
     stagger_str = f", stagger {stagger_max:.0f}s" if stagger_max > 0 else ""
     phase2_label = (
-        f"{rank_model.split('/')[-1]} validate (vision: {vision_model.split('/')[-1]})"
+        f"{rank_model.split('/')[-1]} validate"
         if validate
         else f"{rank_model.split('/')[-1]} rank/dedupe"
     )
@@ -921,7 +799,7 @@ async def run_ensemble(
     print(f"\n{'=' * 60}", file=sys.stderr)
     if validate:
         print(
-            f"PHASE 2: Validate ({rank_model.split('/')[-1]} + {vision_model.split('/')[-1]} vision)",
+            f"PHASE 2: Validate ({rank_model.split('/')[-1]})",
             file=sys.stderr,
         )
         print(f"{'=' * 60}", file=sys.stderr)
@@ -931,8 +809,6 @@ async def run_ensemble(
             pdf_bytes,
             client,
             validator_model=rank_model,
-            vision_model=vision_model,
-            detect_prompt=_get_detect_prompt(prompt_style),
         )
         total_cost += _calculate_cost(validate_usage, rank_model)
 
@@ -948,7 +824,6 @@ async def run_ensemble(
                 "strategy": "ensemble-validate",
                 "detect_model": detect_model,
                 "validator_model": rank_model,
-                "vision_model": vision_model,
                 "num_runs": num_runs,
                 "num_launched": num_launch,
                 "stagger_max": stagger_max,
@@ -1100,14 +975,8 @@ async def main():
     parser.add_argument(
         "--validate",
         action="store_true",
-        help="Use vision-powered validation instead of text-only rank/dedupe. "
-        "GPT-5.2 validates each finding by calling vision(pages, query) "
-        "backed by Gemini Flash.",
-    )
-    parser.add_argument(
-        "--vision-model",
-        default=DEFAULT_DETECT_MODEL,
-        help="Model for vision tool calls during validation (default: gemini-3-flash)",
+        help="Use single-shot validation instead of text-only rank/dedupe. "
+        "GPT-5.2 sees the full PDF and verifies each candidate finding.",
     )
     args = parser.parse_args()
 
@@ -1123,7 +992,6 @@ async def main():
         prompt_style=args.prompt_style,
         timeout=args.timeout,
         validate=args.validate,
-        vision_model=args.vision_model,
     )
 
 

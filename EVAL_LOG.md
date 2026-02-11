@@ -620,6 +620,7 @@ Verified against original ar2019.pdf: all 12 FPs are false alarms by the detecto
 | Old-design Opus 4.6 validator | 100% | 97.7% | 98.8% | 1 | 0 | ~$16.45 | 2327s |
 | **Simplified GPT-5.2 validator** | **96.8%** | **93.5%** | **95.1%** | **2** | **1** | **$3.14** | **1240s** |
 | **Simplified Opus 4.6 validator** | **96.8%** | **100%** | **98.4%** | **0** | **1** | **~$4.95** | **1375s** |
+| **Single-shot GPT-5.2 (PDF-in)** | **96.8%** | **100%** | **98.4%** | **0** | **1** | **$3.08** | **881s** |
 
 **Verdict:** The simplified validator architecture is strictly better than the old design:
 - GPT-5.2 simplified: +3.3pp F1 vs old GPT-5.2, at similar cost
@@ -628,8 +629,22 @@ Verified against original ar2019.pdf: all 12 FPs are false alarms by the detecto
 
 **Best configurations by use case:**
 - **Cost-optimized**: Text-only ranker ($3.05, 100% recall, 72% precision). Best when FP tolerance is high.
-- **Balanced**: Simplified GPT-5.2 validator ($3.14, 96.8% recall, 93.5% precision). Near-identical cost to text-only, much better precision.
-- **Quality ceiling**: Simplified Opus 4.6 validator (~$4.95, 96.8% recall, 100% precision). Perfect precision, moderate premium.
+- **Balanced / recommended**: Single-shot GPT-5.2 ($3.08, 96.8% recall, 100% precision, F1=98.4%). Same cost as text-only, perfect precision, fastest validator.
+- **Quality ceiling**: Simplified Opus 4.6 validator (~$4.95, 96.8% recall, 100% precision). Same quality as single-shot GPT-5.2 but 1.6x more expensive and 56% slower.
+
+### 2026-02-12 — Single-shot GPT-5.2 validator (PDF-in, no tools)
+
+- **Config**: 25x `gemini-3-flash-preview` detect (launch 30, keep 25, stagger 5s) + single-shot `openai/gpt-5.2` validation (full PDF + 277 candidates in one API call)
+- **Recall**: 96.8% (30/31)
+- **Precision**: 100% (29/29 — 0 FP)
+- **F1**: 98.4%
+- **Cost**: $3.08
+- **Time**: 881s
+- **Missed**: inject_015 (ageing total off by 9 — detection blind spot, same as all prior runs)
+- **Detection stats**: 277 raw findings from 25 runs (3 runs found 0 errors). 5/25 runs found inject_031 (label error).
+- **Key change**: Replaced multi-turn vision-tool validator with single API call. GPT-5.2 receives the full 66-page PDF as a file attachment alongside all 277 candidates. Returns a JSON array of confirmed issues in one response.
+- **Comparison to multi-turn GPT-5.2**: Same recall/precision, $0.06 cheaper, **29% faster** (881s vs 1240s). Eliminates agent loop, vision tool calls, and Flash vision model dependency.
+- **Comparison to multi-turn Opus 4.6**: Same F1 (98.4%), **38% cheaper** ($3.08 vs $4.95), **36% faster** (881s vs 1375s).
 
 ## Written test_Case.pdf (27 errors)
 
