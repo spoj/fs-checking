@@ -2,10 +2,18 @@
 
 import asyncio
 import json
+import re
 import sys
 from pathlib import Path
 
 from .api import OpenRouterClient
+
+
+def _extract_page(location: str) -> int:
+    """Extract page number from a location string like 'Page 12, Note 21 ...'."""
+    m = re.search(r"[Pp]age\s+(\d+)", location)
+    return int(m.group(1)) if m else 0
+
 
 MATCH_PROMPT = """\
 You are evaluating a financial statement error detection system.
@@ -77,9 +85,23 @@ async def evaluate_with_llm(
 
     gt_issues = gt["issues"]
 
-    # Support both old "checks" format and new ensemble "high/medium/low" format
+    # Support old "checks" format, ensemble "high/medium/low", and new "issues" format
     if "checks" in model_results:
         model_findings = model_results["checks"]
+    elif "issues" in model_results:
+        # New validate format: flat list with location + description, no IDs
+        model_findings = [
+            {
+                "id": f"issue_{i + 1:03d}",
+                "page": _extract_page(issue.get("location", "")),
+                "description": (
+                    f"{issue.get('location', '')}: {issue.get('description', '')}"
+                    if issue.get("location")
+                    else issue.get("description", "")
+                ),
+            }
+            for i, issue in enumerate(model_results["issues"])
+        ]
     else:
         # Ensemble format: combine high, medium, low
         model_findings = (
@@ -129,8 +151,6 @@ async def evaluate_with_llm(
     content = response.get("message", {}).get("content", "")
 
     # Parse response
-    import re
-
     try:
         json_match = re.search(r"\{[\s\S]*\}", content)
         if json_match:

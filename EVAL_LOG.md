@@ -465,6 +465,172 @@ Verified against original ar2019.pdf: all 12 FPs are false alarms by the detecto
 3. **The unrendered PDF is a cleaner test bed** than the original PDF — only 12 FPs vs 18+ on the original ar2019 mixed injection. The markdown→PDF pipeline produces consistent, text-layer-clean documents.
 4. **Cost efficiency**: $3.05 for 31/31 recall = $0.10 per detected error. Comparable to the original ar2019 runs.
 
+### 2026-02-12 — 25x Flash + GPT-5.2 validator (vision: Flash), race 30/25
+
+- **Config**: 25x `gemini-3-flash-preview` (launch 30, keep 25), stagger 5s, `gpt-5.2` validator with `gemini-3-flash-preview` vision tool, reasoning high (validator), reasoning low (vision)
+- **Input**: `ar2019_fs.injected.pdf` (66 pages, 31 errors)
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 30/31 (96.8%)
+- **Precision**: 75.0% (30/40 model findings correct)
+- **F1**: 84.5%
+- **FP**: 10 | **FN**: 1
+- **Cost**: $3.45
+- **Time**: 1613s (27 min)
+- **Raw findings**: 201 (25 runs kept, 5 cancelled with partial harvest)
+- **Unique after validation**: 40 (H:19, M:18, L:3)
+- **Validation details**: 198 verdicts, 35 vision calls, 15 turns
+
+**Missed (1/31):**
+- inject_024: Note 21 receivables RMB currency transposition (95,042→95,024). Hard tier. An 18-unit difference in a multi-currency breakdown table with 8 rows.
+
+**False positives (10):**
+- cf_total_increase_mismatch, cash_flow_net_increase_calculation_error, cash_gen_from_ops_reconciliation_mismatch — cascade/duplicate CF findings
+- due_from_related_total_crossfoot_mismatch — duplicate of inject_014
+- pl_total_margin_mismatch — cascade from inject_001 (gross profit)
+- ppe_2019_furniture_nbv_mismatch — cascade from inject_029 (depreciation)
+- note_ties_intangibles_accum_amort_mismatch — cascade from inject_012
+- note_28_maturity_table_mismatch — cascade from inject_017
+- net_pension_liability_rollforward_error_2018 — historical tie-in error (not in GT)
+- financial_summary_duplicate_2018_labels — formatting observation (not an error)
+
+**Comparison with text-only ranker (2026-02-11):**
+
+| Metric | Text-only Ranker | GPT-5.2 Validator |
+|--------|------------------|-------------------|
+| Recall | 31/31 (100%) | 30/31 (96.8%) |
+| Precision | 72.1% (31/43) | 75.0% (30/40) |
+| F1 | 83.8% | 84.5% |
+| FP | 12 | 10 |
+| FN | 0 | 1 |
+| Cost | $3.05 | $3.45 |
+| Time | 859s | 1613s |
+| Unique findings | 43 | 40 |
+
+**Key observations:**
+1. **GPT-5.2 validator lost 1 error (inject_024) that text-only ranker kept.** The validator's vision tool (Flash at low reasoning) could not confirm the 18-unit RMB transposition — likely Flash read the number as expected (95,042) instead of the actual mutated value (95,024), causing the validator to reject it.
+2. **Slightly better precision** (75% vs 72%) — the validator correctly rejected 2 extra FPs that the text-only ranker kept. But the net effect is marginal.
+3. **Nearly 2x slower** (1613s vs 859s) due to 35 vision calls, each sending the full 66-page PDF to Flash.
+4. **Cost comparable** ($3.45 vs $3.05) — the vision calls add ~$0.40. Most cost is still in phase 1 detection.
+5. **The previous Opus 4.6 validator result (98.8% F1, 100% recall, 97.7% precision) was with the audit-primed Flash system prompt + low reasoning fix.** This run uses the same fix, but GPT-5.2 as validator is less thorough than Opus — it made fewer vision calls and missed the subtlest error.
+
+**Verdict:** GPT-5.2 validator does not improve on the text-only ranker for this test set. The recall regression (100%→96.8%) and 2x latency penalty are not justified by the marginal precision gain. For cost-effective runs, the text-only ranker remains the best phase 2 option. Opus 4.6 validator is the quality ceiling but at $13+ cost.
+
+### 2026-02-12 — 25x Flash + Opus 4.6 validator (old design, vision: Flash), raw findings reuse
+
+- **Config**: Reused 249 raw findings from the GPT-5.2 old-design validator run. `anthropic/claude-opus-4.6` validator with `gemini-3-flash-preview` vision tool, reasoning high (validator), reasoning low (vision). Old-design `validate_finding()` tool + `vision()` tool + verdict state machine.
+- **Input**: `ar2019_fs.injected.pdf` (66 pages, 31 errors)
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 31/31 (100%)
+- **Precision**: 97.7% (42/43 model findings correct)
+- **F1**: 98.8%
+- **FP**: 1 | **FN**: 0
+- **Cost**: $13.42 (validator phase only)
+- **Time**: 2327s (39 min)
+- **Unique after validation**: 43 (H:10, M:21, L:12)
+
+**FP (1):** note_21_incorrect_table_placement — layout observation about a payables aging table appearing in the receivables note section. Not an error.
+
+**Key observations:**
+1. **100% recall, 97.7% precision** — Opus 4.6 found all 31 GT errors including inject_024 (RMB currency transposition) which GPT-5.2 validator missed.
+2. **43 output findings** (vs GPT-5.2's 35) — Opus is more thorough, keeping more granular findings. Many GT errors get matched by 2 separate findings.
+3. **$13.42 is very expensive** for the validator phase alone. Total pipeline cost would be ~$16+ ($3 detection + $13 validation). Not practical for routine use.
+4. **This is the quality ceiling** — best F1 (98.8%) achieved on this test set by any configuration.
+
+### 2026-02-12 — Simplified validator: GPT-5.2 + vision (Flash), race 30/25
+
+- **Config**: 25x `gemini-3-flash-preview` (launch 30, keep 25), stagger 5s. **Simplified validator**: `openai/gpt-5.2` validator with `gemini-3-flash-preview` vision tool. No `validate_finding()` tool — validator uses `vision()` to verify, then outputs a single JSON array. No verdict state machine, no priority tiers, no finding IDs.
+- **Input**: `ar2019_fs.injected.pdf` (66 pages, 31 errors)
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 30/31 (96.8%)
+- **Precision**: 93.5% (29/31 model findings correct)
+- **F1**: 95.1%
+- **FP**: 2 | **FN**: 1
+- **Cost**: $3.14 (total, detection + validation)
+- **Time**: 1240s (21 min)
+- **Raw findings**: 270 (25 runs)
+- **Output findings**: 31
+
+**Missed (1/31):**
+- inject_015: Trade receivables ageing total off by 9 (1,017,198 vs 1,017,189). Hard tier. 0/25 detection runs found it — consistent model blind spot.
+
+**FP (2):**
+- issue_029: Intangible assets cost rollforward from 2018 (historical, not in GT)
+- issue_031: Blank table observation in impairment test section (presentation, not an error)
+
+**Comparison with old-design GPT-5.2 validator (same test set):**
+
+| Metric | Old design (GPT-5.2) | Simplified (GPT-5.2) | Delta |
+|--------|---------------------|----------------------|-------|
+| Recall | 87.1% (27/31) | 96.8% (30/31) | +9.7pp |
+| Precision | 97.1% (34/35) | 93.5% (29/31) | -3.6pp |
+| F1 | 91.8% | 95.1% | +3.3pp |
+| FP | 1 | 2 | +1 |
+| FN | 4 | 1 | -3 |
+| Cost | $1.30 (val only) | $3.14 (total) | — |
+| Time | 1456s (val only) | 1240s (total) | — |
+| Output findings | 35 | 31 | -4 |
+
+**Key observations:**
+1. **Massive recall improvement** (87.1% → 96.8%) — the old-design validator lost 4 GT errors (inject_013, 017, 023, 024) through the verdict state machine's merge/reject logic. The simplified design preserves them.
+2. **The old-design bug** where duplicate finding IDs caused verdict overwriting is eliminated — there are no IDs or verdicts in the simplified design.
+3. **Slightly worse precision** (97.1% → 93.5%) — the simplified validator keeps 2 FPs that the old design's stricter rejection logic would have filtered. Acceptable tradeoff for +3 errors detected.
+4. **Net F1 gain of 3.3pp** — the recall improvement outweighs the precision loss.
+
+### 2026-02-12 — Simplified validator: Opus 4.6 + vision (Flash), raw findings reuse
+
+- **Config**: Reused 270 raw findings from the simplified GPT-5.2 run. `anthropic/claude-opus-4.6` validator with `gemini-3-flash-preview` vision tool. Same simplified design (no `validate_finding()`, single JSON array output).
+- **Input**: `ar2019_fs.injected.pdf` (66 pages, 31 errors)
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 30/31 (96.8%)
+- **Precision**: 100% (35/35 model findings correct)
+- **F1**: 98.4%
+- **FP**: 0 | **FN**: 1
+- **Cost**: $1.92 (validator phase only; total pipeline ~$4.95)
+- **Time**: 1375s (23 min)
+- **Output findings**: 35
+
+**Missed (1/31):**
+- inject_015: Same as GPT-5.2 simplified — detection-phase miss (0/25 runs), not a validator failure.
+
+**Comparison with old-design Opus 4.6 validator (same test set):**
+
+| Metric | Old design (Opus) | Simplified (Opus) | Delta |
+|--------|-------------------|-------------------|-------|
+| Recall | 100% (31/31) | 96.8% (30/31) | -3.2pp |
+| Precision | 97.7% (42/43) | 100% (35/35) | +2.3pp |
+| F1 | 98.8% | 98.4% | -0.4pp |
+| FP | 1 | 0 | -1 |
+| FN | 0 | 1 | +1 |
+| Cost (val only) | $13.42 | $1.92 | **-85%** |
+| Time | 2327s | 1375s | -41% |
+| Output findings | 43 | 35 | -8 |
+
+**Key observations:**
+1. **7x cheaper** ($1.92 vs $13.42) — the simplified design requires far fewer tokens because the validator outputs a compact JSON array instead of calling `validate_finding()` for each raw finding individually.
+2. **The 1 FN (inject_015) is a detection miss**, not a validator miss — 0/25 runs found it. The old-design run also used different raw findings (249 vs 270) from a different detection batch, which happened to include inject_015.
+3. **Perfect precision** (100%) — Opus doesn't produce any false positives with the simplified design. The old design's 1 FP (table placement observation) was probably introduced by the vision tool + validate_finding interaction.
+4. **F1 essentially tied** (98.8% vs 98.4%) — the old design's recall advantage comes from different detection inputs, not from better validation.
+
+### Validator architecture comparison (all runs on ar2019_fs.injected, 31 GT errors)
+
+| Config | Recall | Precision | F1 | FP | FN | Cost (total) | Time |
+|--------|--------|-----------|-----|----|----|-------------|------|
+| Text-only ranker (GPT-5.2) | 100% | 72.1% | 83.8% | 12 | 0 | $3.05 | 859s |
+| Old-design GPT-5.2 validator | 87.1% | 97.1% | 91.8% | 1 | 4 | ~$4.35 | 1456s |
+| Old-design Opus 4.6 validator | 100% | 97.7% | 98.8% | 1 | 0 | ~$16.45 | 2327s |
+| **Simplified GPT-5.2 validator** | **96.8%** | **93.5%** | **95.1%** | **2** | **1** | **$3.14** | **1240s** |
+| **Simplified Opus 4.6 validator** | **96.8%** | **100%** | **98.4%** | **0** | **1** | **~$4.95** | **1375s** |
+
+**Verdict:** The simplified validator architecture is strictly better than the old design:
+- GPT-5.2 simplified: +3.3pp F1 vs old GPT-5.2, at similar cost
+- Opus simplified: -0.4pp F1 vs old Opus (detection variance, not validator), at **7x lower cost**
+- The simplified design eliminates the verdict state machine bug and is ~50% less code
+
+**Best configurations by use case:**
+- **Cost-optimized**: Text-only ranker ($3.05, 100% recall, 72% precision). Best when FP tolerance is high.
+- **Balanced**: Simplified GPT-5.2 validator ($3.14, 96.8% recall, 93.5% precision). Near-identical cost to text-only, much better precision.
+- **Quality ceiling**: Simplified Opus 4.6 validator (~$4.95, 96.8% recall, 100% precision). Perfect precision, moderate premium.
+
 ## Written test_Case.pdf (27 errors)
 
 ### 2026-02-05 — Historical baseline (pre tool-call rewrite)

@@ -318,6 +318,256 @@ Return JSON only:
 """
 
 
+VISION_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "vision",
+        "description": (
+            "Ask a vision model to look at the ENTIRE PDF document and answer "
+            "your query. The model reads all pages and reports exactly what it "
+            "sees. Use this to verify numbers, labels, cross-references, or "
+            "any claim about the document."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": (
+                        "What to look for. Be specific: "
+                        "'What is the gross profit for 2019 in the P&L? "
+                        "List the exact numbers for Turnover and COGS.'"
+                    ),
+                },
+            },
+            "required": ["query"],
+        },
+    },
+}
+
+VALIDATE_PROMPT = """\
+You are a financial statement auditor VALIDATING detection findings.
+
+You have {num_candidates} candidate errors from an automated detection scan. \
+Your job is to deduplicate, verify each finding by looking at the actual PDF, \
+and produce a final clean list of confirmed errors.
+
+## Candidates
+
+{candidates_json}
+
+## Tools
+
+- **vision(query)**: Ask a vision model to read the ENTIRE PDF and answer your query. \
+The model sees all pages. Use this to verify numbers, labels, cross-references, or \
+any claim. You can batch multiple vision calls in a single turn — they execute in parallel.
+
+## Workflow
+
+1. Group candidates by section/topic for efficient checking
+2. Call `vision(query=...)` to verify each group — ask specific questions about the \
+numbers the candidates claim are wrong. Batch multiple vision calls per turn.
+3. Based on the vision evidence, decide which candidates are real errors and which \
+are false positives or duplicates.
+4. When done verifying, output your final answer as a JSON array.
+
+## Final Output
+
+After all verification is complete, output a JSON array of confirmed, deduplicated errors. \
+Each entry has only two fields:
+
+```json
+[
+  {{"location": "page and section/table", "description": "what is wrong, with specific numbers"}},
+  ...
+]
+```
+
+- **location**: Where in the document (e.g. "Page 12, Note 21 Trade and Other Receivables, currency breakdown table")
+- **description**: Clear description with the specific numbers showing the discrepancy \
+(e.g. "Sum of currency components (815,732 + 26,329 + ...) = 1,157,953 but total shows 1,157,971")
+
+## Rules
+
+- Use vision liberally — it's cheap. Batch multiple calls per turn.
+- Merge duplicates: if multiple candidates describe the same underlying error, output it once.
+- Reject false positives: if vision shows the numbers are actually correct, drop it.
+- Err on the side of keeping — missing real errors is worse than keeping a false positive.
+- Do NOT include IDs, priorities, or categories. Just location and description.
+"""
+
+
+async def _vision_call(
+    query: str,
+    pdf_bytes: bytes,
+    num_pages: int,
+    client: OpenRouterClient,
+    vision_model: str,
+) -> str:
+    """Send the full PDF to Flash with a query. Returns Flash's answer.
+
+    Uses low reasoning effort to prevent the model from "thinking" numbers
+    into consistency — we want it to read and report, not rationalize.
+    """
+    pdf_b64 = base64.b64encode(pdf_bytes).decode()
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a precise document reader for a financial statement audit. "
+                "This document MAY CONTAIN ERRORS — that is the whole point of the audit. "
+                "Your job is to report EXACTLY what you see on the page, not what you think "
+                "should be there. NEVER adjust, round, or correct numbers to make them consistent. "
+                "If a total does not match the sum of its components, report both the individual "
+                "numbers AND the printed total exactly as shown. Do NOT assume the total is correct. "
+                "Do NOT recompute numbers to fill gaps — only report digits you can read on the page."
+            ),
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "file",
+                    "file": {
+                        "filename": "document.pdf",
+                        "file_data": f"data:application/pdf;base64,{pdf_b64}",
+                    },
+                },
+                {
+                    "type": "text",
+                    "text": (
+                        f"This is a {num_pages}-page financial statement document.\n\n"
+                        f"Question: {query}\n\n"
+                        "IMPORTANT: Report numbers EXACTLY as printed. Do not correct or "
+                        "adjust any figures. If you see a table, quote every row verbatim."
+                    ),
+                },
+            ],
+        },
+    ]
+
+    resp = await client.chat(
+        model=vision_model, messages=messages, reasoning_effort="low"
+    )
+    answer = resp.get("message", {}).get("content", "")
+    return answer or "(no response)"
+
+
+async def _validate_findings(
+    candidates: list[dict],
+    pdf_bytes: bytes,
+    client: OpenRouterClient,
+    validator_model: str,
+    vision_model: str,
+    detect_prompt: str | None = None,
+    max_turns: int = 120,
+) -> tuple[list[dict], dict]:
+    """Validate and deduplicate findings using a validator model with vision tool.
+
+    The validator uses vision(query) to check findings against the PDF,
+    then outputs a final JSON array of confirmed, deduplicated issues.
+
+    Args:
+        candidates: Raw detection findings to validate
+        pdf_bytes: Original PDF bytes
+        client: API client
+        validator_model: Model for the validator (e.g., GPT-5.2)
+        vision_model: Model for vision tool calls (e.g., Gemini Flash)
+        detect_prompt: Detection prompt for context (unused, kept for API compat)
+        max_turns: Max conversation turns
+
+    Returns:
+        Tuple of (list of validated issues, usage dict)
+    """
+    from ...agent_loop import run_agent_loop
+    from ...pdf_utils import get_page_count
+
+    num_pages = get_page_count(pdf_bytes)
+
+    candidates_for_prompt = [
+        {
+            "id": c.get("id"),
+            "page": c.get("page"),
+            "category": c.get("category"),
+            "description": c.get("description"),
+        }
+        for c in candidates
+    ]
+
+    prompt = VALIDATE_PROMPT.format(
+        num_candidates=len(candidates),
+        candidates_json=json.dumps(candidates_for_prompt, indent=2),
+    )
+
+    messages: list[dict] = [{"role": "user", "content": prompt}]
+    tools = [VISION_TOOL]
+
+    vision_calls = 0
+
+    async def call_model(msgs: list[dict]) -> tuple[dict, dict]:
+        resp = await client.chat(model=validator_model, messages=msgs, tools=tools)
+        return resp.get("message", {}), resp.get("usage", {})
+
+    async def execute_tool(name: str, args: dict) -> str:
+        nonlocal vision_calls
+
+        if name == "vision":
+            query = args.get("query", "")
+            vision_calls += 1
+            print(
+                f"      vision('{query[:80]}...')",
+                file=sys.stderr,
+            )
+            return await _vision_call(
+                query,
+                pdf_bytes,
+                num_pages,
+                client,
+                vision_model,
+            )
+        else:
+            return json.dumps({"error": f"unknown tool: {name}"})
+
+    result = await run_agent_loop(
+        call_model=call_model,
+        tool_executor=execute_tool,
+        initial_messages=messages,
+        max_iterations=max_turns,
+    )
+
+    print(
+        f"    Validation complete: "
+        f"{vision_calls} vision calls, {result.iterations} turns",
+        file=sys.stderr,
+    )
+
+    # Parse the final message as JSON array
+    issues = []
+    try:
+        # Look for JSON array in the final message
+        json_match = re.search(r"\[[\s\S]*\]", result.final_message)
+        if json_match:
+            issues = json.loads(json_match.group())
+    except json.JSONDecodeError as e:
+        print(f"    WARNING: Failed to parse validator output: {e}", file=sys.stderr)
+
+    if not issues:
+        print(
+            "    WARNING: No issues parsed from validator output, "
+            "keeping all candidates as fallback",
+            file=sys.stderr,
+        )
+        issues = [
+            {
+                "location": f"Page {c.get('page', '?')}",
+                "description": c.get("description", ""),
+            }
+            for c in candidates
+        ]
+
+    return issues, result.usage
+
+
 @dataclass
 class RunConfig:
     """Configuration for a detection run."""
@@ -366,8 +616,8 @@ async def _run_detection_pass(
 ) -> tuple[list[dict], dict]:
     """Run a single detection pass on PDF using log_issue tool calls.
 
-    The model calls log_issue() incrementally as it finds errors.
-    We loop, feeding back tool results, until the model stops calling tools.
+    Uses the generic agent loop. The model calls log_issue() incrementally
+    as it finds errors.
 
     Args:
         config: Run configuration with seed for shuffling
@@ -384,6 +634,8 @@ async def _run_detection_pass(
     Returns:
         Tuple of (findings list, aggregated usage dict)
     """
+    from ...agent_loop import run_agent_loop
+
     # Stagger start to avoid thundering herd
     if stagger_max > 0:
         delay = random.uniform(0, stagger_max)
@@ -411,7 +663,7 @@ async def _run_detection_pass(
         {"type": "text", "text": detect_prompt},
     ]
 
-    messages = [{"role": "user", "content": user_content}]
+    initial_messages = [{"role": "user", "content": user_content}]
     tools = [LOG_ISSUE_TOOL]
 
     findings: list[dict] = []
@@ -419,61 +671,29 @@ async def _run_detection_pass(
     if partial_results is not None:
         partial_results[config.run_id] = findings
 
-    total_usage: dict = {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0}
-    max_turns = 30  # safety limit
-    turn = 0
+    async def call_model(msgs: list[dict]) -> tuple[dict, dict]:
+        resp = await client.chat(model=config.model, messages=msgs, tools=tools)
+        return resp.get("message", {}), resp.get("usage", {})
 
-    for turn in range(max_turns):
-        response = await client.chat(model=config.model, messages=messages, tools=tools)
-        msg = response.get("message", {})
-        usage = response.get("usage", {})
-        total_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
-        total_usage["completion_tokens"] += usage.get("completion_tokens", 0)
-        if "cost" in usage and usage["cost"] is not None:
-            total_usage["cost"] += float(usage["cost"])
+    async def execute_tool(name: str, args: dict) -> str:
+        if name == "log_issue":
+            args["_run"] = config.run_id
+            findings.append(args)
+            return json.dumps({"status": "logged", "issue_number": len(findings)})
+        return json.dumps({"status": "error", "message": f"unknown tool: {name}"})
 
-        tool_calls = msg.get("tool_calls", [])
-
-        # Append assistant message to conversation
-        messages.append(msg)
-
-        if not tool_calls:
-            break
-
-        # Process each tool call
-        for tc in tool_calls:
-            fn = tc.get("function", {})
-            fn_name = fn.get("name", "")
-            call_id = tc.get("id", "")
-
-            if fn_name == "log_issue":
-                try:
-                    args = json.loads(fn.get("arguments", "{}"))
-                    args["_run"] = config.run_id
-                    findings.append(args)
-                    ack = json.dumps(
-                        {"status": "logged", "issue_number": len(findings)}
-                    )
-                except (json.JSONDecodeError, TypeError) as e:
-                    ack = json.dumps({"status": "error", "message": str(e)})
-            else:
-                ack = json.dumps(
-                    {"status": "error", "message": f"unknown tool: {fn_name}"}
-                )
-
-            messages.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": call_id,
-                    "content": ack,
-                }
-            )
+    result = await run_agent_loop(
+        call_model=call_model,
+        tool_executor=execute_tool,
+        initial_messages=initial_messages,
+        max_iterations=30,
+    )
 
     print(
-        f"[{config.run_id}] Found {len(findings)} errors ({turn + 1} turns)",
+        f"[{config.run_id}] Found {len(findings)} errors ({result.iterations} turns)",
         file=sys.stderr,
     )
-    return findings, total_usage
+    return findings, result.usage
 
 
 async def _rank_and_dedupe(
@@ -542,12 +762,16 @@ async def run_ensemble(
     stagger_max: float = 0.0,
     prompt_style: str = "default",
     timeout: float = 1800.0,
+    validate: bool = False,
+    vision_model: str = DEFAULT_DETECT_MODEL,
 ) -> dict:
-    """Run ensemble detection with rank/dedupe.
+    """Run ensemble detection with rank/dedupe or validation.
 
     Pipeline:
     1. Detection: launch N parallel runs, keep first K to complete
-    2. Rank/Dedupe: Gemini Pro organizes and deduplicates findings
+    2a. Rank/Dedupe (default): text-only dedup and ranking
+    2b. Validate (--validate): GPT-5.2 validates each finding using a
+        vision(pages, query) tool backed by Gemini Flash
 
     Accepts any PDF — native or pre-rasterized (via ``rasterize_pdf``).
     For visual-only mode, rasterize offline first and pass the result.
@@ -556,7 +780,7 @@ async def run_ensemble(
         pdf_path: Path to PDF file (native or pre-rasterized)
         output_path: Output JSON path (default: <pdf>.ensemble.json)
         detect_model: Model for detection phase (default: gemini-3-flash)
-        rank_model: Model for rank/dedupe phase (default: gemini-3-pro)
+        rank_model: Model for rank/dedupe phase (default: gpt-5.2)
         num_runs: Number of detection results to keep (default: 10)
         shuffle_mode: Page reorder mode — "random" (full shuffle, default),
             "ring" (circular offset preserving adjacency), or "none"
@@ -565,6 +789,8 @@ async def run_ensemble(
         prompt_style: Detection prompt variant — "default" or "structured"
             (multi-pass procedure, better for models that stop early)
         timeout: HTTP client timeout in seconds (default: 1800)
+        validate: Use vision-powered validation instead of text-only rank/dedupe
+        vision_model: Model for vision tool calls during validation
 
     Returns:
         Result dict with prioritized findings and metadata
@@ -586,10 +812,15 @@ async def run_ensemble(
         f" (launch {num_launch}, keep {num_runs})" if num_launch > num_runs else ""
     )
     stagger_str = f", stagger {stagger_max:.0f}s" if stagger_max > 0 else ""
+    phase2_label = (
+        f"{rank_model.split('/')[-1]} validate (vision: {vision_model.split('/')[-1]})"
+        if validate
+        else f"{rank_model.split('/')[-1]} rank/dedupe"
+    )
     print(
         f"Strategy: {num_runs}x {detect_model.split('/')[-1]}"
         f"{race_str}{stagger_str}"
-        f" + {rank_model.split('/')[-1]} rank/dedupe",
+        f" + {phase2_label}",
         file=sys.stderr,
     )
 
@@ -686,15 +917,79 @@ async def run_ensemble(
         file=sys.stderr,
     )
 
-    # Phase 2: Rank and Dedupe
+    # Phase 2: Rank/Dedupe or Validate
     print(f"\n{'=' * 60}", file=sys.stderr)
-    print(f"PHASE 2: Rank/Dedupe ({rank_model.split('/')[-1]})", file=sys.stderr)
-    print(f"{'=' * 60}", file=sys.stderr)
+    if validate:
+        print(
+            f"PHASE 2: Validate ({rank_model.split('/')[-1]} + {vision_model.split('/')[-1]} vision)",
+            file=sys.stderr,
+        )
+        print(f"{'=' * 60}", file=sys.stderr)
 
-    ranked, rank_usage = await _rank_and_dedupe(
-        all_findings, client, rank_model, detect_prompt=_get_detect_prompt(prompt_style)
-    )
-    total_cost += _calculate_cost(rank_usage, rank_model)
+        validated_issues, validate_usage = await _validate_findings(
+            all_findings,
+            pdf_bytes,
+            client,
+            validator_model=rank_model,
+            vision_model=vision_model,
+            detect_prompt=_get_detect_prompt(prompt_style),
+        )
+        total_cost += _calculate_cost(validate_usage, rank_model)
+
+        print(
+            f"Phase 2 complete: {len(validated_issues)} validated issues",
+            file=sys.stderr,
+        )
+
+        elapsed = time.time() - total_start
+
+        result = {
+            "metadata": {
+                "strategy": "ensemble-validate",
+                "detect_model": detect_model,
+                "validator_model": rank_model,
+                "vision_model": vision_model,
+                "num_runs": num_runs,
+                "num_launched": num_launch,
+                "stagger_max": stagger_max,
+                "input_mode": "pdf",
+                "shuffled": shuffle_mode != "none",
+                "shuffle_mode": shuffle_mode,
+                "prompt_style": prompt_style,
+                "num_pages": num_pages,
+                "elapsed_seconds": round(elapsed, 1),
+                "cost_usd": round(total_cost, 4),
+            },
+            "issues": validated_issues,
+            "raw_findings": all_findings,
+            "summary": {
+                "raw_findings": len(all_findings),
+                "validated_issues": len(validated_issues),
+            },
+        }
+
+        output_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+
+        print(f"\n{'=' * 60}", file=sys.stderr)
+        print(f"Completed in {elapsed:.1f}s (est. ${total_cost:.4f})", file=sys.stderr)
+        print(
+            f"Raw: {len(all_findings)} -> Validated: {len(validated_issues)}",
+            file=sys.stderr,
+        )
+        print(f"Output: {output_path}", file=sys.stderr)
+
+        return result
+    else:
+        print(f"PHASE 2: Rank/Dedupe ({rank_model.split('/')[-1]})", file=sys.stderr)
+        print(f"{'=' * 60}", file=sys.stderr)
+
+        ranked, rank_usage = await _rank_and_dedupe(
+            all_findings,
+            client,
+            rank_model,
+            detect_prompt=_get_detect_prompt(prompt_style),
+        )
+        total_cost += _calculate_cost(rank_usage, rank_model)
 
     high = ranked.get("high", [])
     medium = ranked.get("medium", [])
@@ -802,6 +1097,18 @@ async def main():
         default=1800.0,
         help="HTTP client timeout in seconds (default: 1800 = 30 min)",
     )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Use vision-powered validation instead of text-only rank/dedupe. "
+        "GPT-5.2 validates each finding by calling vision(pages, query) "
+        "backed by Gemini Flash.",
+    )
+    parser.add_argument(
+        "--vision-model",
+        default=DEFAULT_DETECT_MODEL,
+        help="Model for vision tool calls during validation (default: gemini-3-flash)",
+    )
     args = parser.parse_args()
 
     await run_ensemble(
@@ -815,6 +1122,8 @@ async def main():
         stagger_max=args.stagger,
         prompt_style=args.prompt_style,
         timeout=args.timeout,
+        validate=args.validate,
+        vision_model=args.vision_model,
     )
 
 

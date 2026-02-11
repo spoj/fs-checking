@@ -46,16 +46,52 @@ def _get_headers() -> dict:
     }
 
 
+def _add_cache_control(messages: list[dict]) -> list[dict]:
+    """Add cache_control breakpoint to the last cacheable message.
+
+    Finds the last user or system message and adds cache_control to it.
+    This tells Anthropic models to cache everything up to this point.
+    Must deep-copy to avoid mutating the caller's messages.
+    """
+    import copy
+
+    messages = copy.deepcopy(messages)
+
+    for i in range(len(messages) - 1, -1, -1):
+        role = messages[i].get("role")
+        if role in ("user", "system", "tool"):
+            content = messages[i].get("content", "")
+
+            if isinstance(content, str):
+                messages[i]["content"] = [
+                    {
+                        "type": "text",
+                        "text": content,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ]
+            elif isinstance(content, list):
+                for j in range(len(content) - 1, -1, -1):
+                    if content[j].get("type") == "text":
+                        content[j]["cache_control"] = {"type": "ephemeral"}
+                        break
+            break
+
+    return messages
+
+
 class OpenRouterClient:
-    """Async client for OpenRouter API with retry and reasoning effort."""
+    """Async client for OpenRouter API with retry, reasoning, and caching."""
 
     def __init__(
         self,
         reasoning_effort: str = "high",
+        enable_cache: bool = True,
         timeout: float = 600.0,
         max_retries: int = 8,
     ):
         self.reasoning_effort = reasoning_effort
+        self.enable_cache = enable_cache
         self.timeout = timeout
         self.max_retries = max_retries
 
@@ -75,6 +111,9 @@ class OpenRouterClient:
         Returns:
             {"message": assistant message dict, "usage": usage dict}
         """
+        if self.enable_cache:
+            messages = _add_cache_control(messages)
+
         payload: dict[str, Any] = {
             "model": model,
             "messages": messages,
