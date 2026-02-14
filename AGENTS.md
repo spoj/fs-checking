@@ -1,6 +1,8 @@
 # fs_checking — Agent Instructions
 
-LLM-powered IFRS financial statement error detection. Python 3.12+, async, OpenRouter API.
+**This repo is public.** All commits are pushed to GitHub. Do not commit proprietary
+data, internal documents, or client financial statements. Only commit code, configs,
+ground truth JSON for public/synthetic test sets, and experiment logs. When in doubt, ask.
 
 ## Project Structure
 
