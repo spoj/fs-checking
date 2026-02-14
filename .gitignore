@@ -21,3 +21,6 @@ uv.lock
 
 # Unrendered markdown (verbatim financial statement text)
 samples/**/unrender/*.md
+
+# Written test case (derived from internal document)
+samples/written_test_case/
