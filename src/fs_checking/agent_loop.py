@@ -46,6 +46,8 @@ class AgentResult:
             "prompt_tokens": 0,
             "completion_tokens": 0,
             "cost": 0.0,
+            "reasoning_tokens": 0,
+            "cached_tokens": 0,
         }
     )
     tool_calls_count: int = 0
@@ -64,6 +66,24 @@ def accumulate_usage(total: dict, usage: dict) -> None:
     total["completion_tokens"] += usage.get("completion_tokens", 0)
     if usage.get("cost") is not None:
         total["cost"] = total.get("cost", 0.0) + float(usage["cost"])
+
+    # Track reasoning tokens (OpenAI models)
+    reasoning = 0
+    ctd = usage.get("completion_tokens_details") or {}
+    if isinstance(ctd, dict):
+        reasoning = ctd.get("reasoning_tokens", 0) or 0
+    total["reasoning_tokens"] = total.get("reasoning_tokens", 0) + reasoning
+
+    # Track cached prompt tokens
+    cached = 0
+    ptd = usage.get("prompt_tokens_details") or {}
+    if isinstance(ptd, dict):
+        cached = ptd.get("cached_tokens", 0) or 0
+    # Also check native_tokens_details (OpenRouter sometimes uses this)
+    ntd = usage.get("native_tokens_details") or {}
+    if isinstance(ntd, dict):
+        cached = max(cached, (ntd.get("cached_tokens", 0) or 0))
+    total["cached_tokens"] = total.get("cached_tokens", 0) + cached
 
 
 async def run_agent_loop(
@@ -91,7 +111,13 @@ async def run_agent_loop(
         AgentResult with success status, final message, usage stats
     """
     messages = list(initial_messages)
-    total_usage: dict = {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0}
+    total_usage: dict = {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "cost": 0.0,
+        "reasoning_tokens": 0,
+        "cached_tokens": 0,
+    }
     tool_calls_count = 0
     iteration = 0
 

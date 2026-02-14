@@ -646,6 +646,113 @@ Verified against original ar2019.pdf: all 12 FPs are false alarms by the detecto
 - **Comparison to multi-turn GPT-5.2**: Same recall/precision, $0.06 cheaper, **29% faster** (881s vs 1240s). Eliminates agent loop, vision tool calls, and Flash vision model dependency.
 - **Comparison to multi-turn Opus 4.6**: Same F1 (98.4%), **38% cheaper** ($3.08 vs $4.95), **36% faster** (881s vs 1375s).
 
+---
+
+### 2026-02-12 — GPT-5.2 vs Flash Benchmark Suite (4 runs)
+
+Systematic comparison of GPT-5.2 vs Gemini 3 Flash as detector, with and without page shuffling.
+All runs use GPT-5.2 single-shot vision validation. Test set: ar2019_fs.injected (31 GT errors, 66-page markdown-rendered PDF).
+
+**Model pricing** (OpenRouter, verified 2026-02-12):
+- GPT-5.2: $1.75/M input, $14.00/M output, $0.175/M cached
+- Gemini 3 Flash: $0.50/M input, $3.00/M output, $0.05/M cache read
+
+#### Summary Table
+
+| # | Config | Recall | Precision | F1 | Cost | Time | Raw findings |
+|---|--------|--------|-----------|----|------|------|-------------|
+| 1 | GPT-5.2 seq x10 + GPT-5.2 val | 71.0% (22/31) | 100% (22/22) | 83.0% | $12.31 | 734s | 186 |
+| 1.1 | GPT-5.2 shuf x10 + GPT-5.2 val | 74.2% (23/31) | 88.5% (23/26) | 80.7% | $13.55 | 787s | 156 |
+| 2 | Flash seq 25/30 + GPT-5.2 val | 90.3% (28/31) | 96.2% (25/26) | 93.1% | $2.67 | 396s | 321 |
+| 2.1 | Flash shuf 25/30 + GPT-5.2 val | 80.6% (25/31) | 96.2% (25/26) | 87.7% | $3.28 | 530s | 321 |
+| 3 | Flash seq 40/50 stagger60 + GPT-5.2 val | 87.1% (27/31) | **100%** (27/27) | 93.1% | $4.11 | 493s | 539 |
+| 3.1 | Flash shuf 40/50 stagger60 + GPT-5.2 val | **96.8%** (30/31) | **100%** (26/26) | **98.4%** | $4.73 | 588s | 445 |
+| 4 | Flash shuf 10/10 + GPT-5.2 val | 93.5% (29/31) | 96.8% (30/31) | 95.1% | **$1.67** | 482s | 113 |
+
+#### Token Usage (Detection Phase)
+
+| # | Prompt tokens | Completion tokens | Reasoning tokens | Cached tokens | Det. cost |
+|---|--------------|-------------------|------------------|---------------|-----------|
+| 1 | 8,963,766 | 220,435 | 189,458 | 4,382,976 | $11.87 |
+| 1.1 | 9,016,150 | 206,608 | 179,153 | 3,462,400 | $13.22 |
+| 2 | 2,345,033 | 568,251 | 509,608 | 1,289,082 | $2.30 |
+| 2.1 | 2,251,993 | 608,547 | 554,953 | 309,049 | $2.81 |
+| 3 | 3,924,170 | 875,259 | 780,722 | 2,281,766 | $3.56 |
+| 3.1 | 4,730,883 | 849,738 | 772,783 | 1,797,775 | $4.11 |
+| 4 | 2,149,311 | 250,517 | 227,451 | 1,322,669 | $1.23 |
+
+#### Token Usage (Validation Phase — GPT-5.2 single-shot)
+
+| # | Prompt tokens | Completion tokens | Reasoning tokens | Cached tokens | Val. cost |
+|---|--------------|-------------------|------------------|---------------|-----------|
+| 1 | 134,562 | 14,583 | 12,159 | 0 | $0.44 |
+| 1.1 | 131,356 | 13,390 | 10,897 | 55,808 | $0.33 |
+| 2 | 147,014 | 14,420 | 11,692 | 56,832 | $0.37 |
+| 2.1 | 147,580 | 21,087 | 18,313 | 56,832 | $0.46 |
+| 3 | 172,252 | 17,949 | 15,266 | 0 | $0.55 |
+| 3.1 | 164,768 | 24,064 | 21,163 | 0 | $0.63 |
+| 4 | 126,053 | 15,689 | 12,639 | 0 | $0.44 |
+
+#### Missed Errors by Config
+
+| GT Error | Difficulty | 1 (GPT seq) | 1.1 (GPT shuf) | 2 (Flash seq) | 2.1 (Flash shuf) | 3 (Flash seq 40) | 3.1 (Flash shuf 40) | 4 (Flash shuf 10) |
+|----------|-----------|-------------|-----------------|---------------|-------------------|-------------------|----------------------|-------------------|
+| inject_002 (P&L taxation) | easy | MISS | hit | hit | hit | hit | hit | hit |
+| inject_007 (OCI comprehensive) | easy | hit | hit | hit | hit | MISS | hit | MISS |
+| inject_013 (Note 18 inventories) | medium | MISS | hit | hit | hit | hit | hit | hit |
+| inject_014 (Note 19 related co.) | medium | MISS | hit | hit | hit | hit | hit | hit |
+| inject_016 (Note 23 payables ageing) | medium | hit | hit | hit | hit | hit | hit | MISS |
+| inject_018 (Note 31 cash flow) | medium | hit | hit | hit | hit | MISS | hit | hit |
+| inject_021 (Note 11 accum amort) | hard | hit | MISS | MISS | MISS | hit | MISS | hit |
+| inject_022 (Note 29 DBO actuarial) | hard | hit | MISS | hit | MISS | hit | hit | hit |
+| inject_023 (Note 30 DTA provisions) | hard | MISS | MISS | hit | hit | hit | hit | hit |
+| inject_024 (Note 21 RMB currency) | hard | MISS | hit | hit | MISS | MISS | hit | hit |
+| inject_025 (Note 28 LT liab RMB) | hard | MISS | MISS | MISS | MISS | MISS | hit | hit |
+| inject_026 (Note 25 share capital) | hard | MISS | hit | hit | hit | hit | hit | hit |
+| inject_027 (Note 41 company BS) | hard | hit | MISS | hit | hit | hit | hit | hit |
+| inject_028 (Note 29 plan assets) | hard | MISS | MISS | MISS | MISS | hit | hit | hit |
+| inject_029 (Note 12 PPE furniture) | hard | hit | MISS | hit | hit | hit | hit | hit |
+| inject_030 (Note 3 SCS COP) | hard | MISS | MISS | hit | MISS | hit | hit | hit |
+
+#### Key Observations
+
+1. **Flash dominates GPT-5.2 as detector.** Flash sequential achieves 90.3% recall at $2.67 vs GPT-5.2's 71.0% at $12.31. That's +19.3pp recall at 4.6x lower cost. GPT-5.2's higher precision (100%) doesn't compensate for the massive recall gap.
+
+2. **At 25 runs, sequential beats shuffled for Flash.** Flash sequential 25/30 (90.3%) outperforms Flash shuffled 25/30 (80.6%) by 9.7pp. Possible explanations:
+   - The markdown-rendered FS is only 66 pages (vs 252 for full AR). Flash handles sequential well at this size — no attention fading.
+   - Sequential enables much better prompt caching (1.29M cached vs 0.31M cached), reducing cost.
+   - With pages in order, the model can follow rollforwards and cross-references more naturally.
+
+3. **At 40 runs, shuffled overtakes sequential and achieves best result.** Flash shuf 40/50 hits **96.8% recall, 100% precision, F1=98.4%** at $4.73. Flash seq 40/50 only reaches 87.1%. With enough runs, shuffling's diversity advantage overcomes the per-run quality hit. This resolves the apparent contradiction with finding #2 — shuffling needs sufficient run count to pay off.
+
+4. **Flash shuf 40/50 breaks both "universal blind spots".** inject_025 (RMB in Note 28) and inject_028 (plan assets) were missed by all 4 prior configs. 40 shuffled runs found both. More runs + diverse page orders = wider coverage of dense tables.
+
+5. **Flash shuf 10/10 is the best cost/quality tradeoff.** 93.5% recall, 96.8% precision, F1=95.1% at only $1.67 — cheapest of all configs. Hits 29/31 GT errors including the "hard" inject_021, inject_025, inject_028 that most other configs miss. High variance expected at 10 runs but this single sample is impressive.
+
+5. **inject_021 (Note 11 accumulated amort column check) is the hardest error.** Missed by 5 of 6 configs. Only GPT-5.2 sequential and Flash seq 40 found it. Requires a vertical cross-check within a multi-column intangible assets table.
+
+6. **Shuffling marginally helps GPT-5.2** (+3.2pp recall) but introduces 3 FPs, reducing precision from 100% to 88.5%.
+
+7. **GPT-5.2 uses 86% reasoning tokens.** Of GPT-5.2's completion tokens, ~86% are reasoning tokens (189K/220K). Flash also uses heavy reasoning (~90% of completion is reasoning). GPT-5.2's much higher $/M token rate makes this very expensive.
+
+8. **GPT-5.2 multi-turn is more variable.** Some runs did 2 turns, others 20-22 turns (run_1: 22 turns, $3.09; run_7: 2 turns, $0.40). The long-running multi-turn runs didn't produce more findings — just burned tokens on empty continuations.
+
+9. **Validation cost scales with candidate count** (~$0.33-$0.63) but remains a small fraction of total cost.
+
+#### Result Files
+
+- `bench1_gpt52_seq_10.json` / `.eval.json`
+- `bench1.1_gpt52_shuf_10.json` / `.eval.json`
+- `bench2_flash_seq_25_30.json` / `.eval.json`
+- `bench2.1_flash_shuf_25_30.json` / `.eval.json`
+- `bench3_flash_seq_40_50.json` / `.eval.json`
+- `bench3.1_flash_shuf_40_50.json` / `.eval.json`
+- `bench4_flash_shuf_10.json` / `.eval.json`
+
+All stored in `samples/ar2019/unrender/`.
+
+---
+
 ## Written test_Case.pdf (27 errors)
 
 ### 2026-02-05 — Historical baseline (pre tool-call rewrite)

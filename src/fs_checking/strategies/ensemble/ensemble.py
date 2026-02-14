@@ -274,6 +274,87 @@ for the topic?
 Log each error as you find it using the log_issue tool.
 """
 
+DETECT_PROMPT_SINGLESHOT = """\
+You are a financial statement auditor. Analyze these financial statements for errors.
+
+IMPORTANT: Pages may appear in shuffled order. Use the page numbers shown in the 
+document headers/footers (e.g., "Page 8" or "8" at top of page), NOT the PDF position.
+
+## Check Categories
+
+### 1. CROSS-FOOTING (Math Checks)
+- Every subtotal must equal sum of its components
+- Balance Sheet, P&L, OCI, Cash Flow subtotals
+- All subtotals within notes
+
+### 2. ROLLFORWARDS (Opening + Changes = Closing)
+- PPE, Provisions, Receivables impairment schedules
+- Check EVERY row
+
+### 3. STATEMENT - NOTE TIES
+- BS line items must tie EXACTLY to corresponding notes
+- P&L items must tie to Note breakdowns
+- CF items must tie to Note reconciliations
+
+### 4. PRESENTATION & LABELING
+Read every label, header, and reference carefully. Report ANY of these:
+
+**Dates & Periods**
+- Column header years must match the reporting period (e.g. "2019" column under \
+"Year ended 31 December 2019")
+- Title dates, subtitle dates, and column headers must all be consistent
+- "(Restated)" or "(Re-presented)" labels must appear on ALL comparative columns \
+that were restated — flag if missing from any column that should have it
+
+**Labels & Classifications**
+- Section headings must match their content (e.g. "Non-current assets" section \
+should not contain current items)
+- "Continuing operations" vs "Discontinued operations" labels must be used correctly
+- Direction words must be consistent: "Due from" (asset) vs "Due to" (liability), \
+"inflow" vs "outflow" in cash flow statements
+- Sign words must match values: "profit" with positive, "loss" with negative; \
+"receivable" in receivable notes, "payable" in payable notes
+
+**References**
+- Every "(Note X)" cross-reference must point to the correct note number — verify \
+the referenced note actually discusses the line item
+- Accounting standard references must be correct (e.g. IFRS 16 is Leases, not \
+IFRS 17 which is Insurance Contracts; IAS 19 is Employee Benefits, not IAS 20)
+- Note numbering should be sequential with no gaps
+
+**Currency & Units**
+- Currency labels (e.g. US$, HK$, EUR) must be consistent within each statement
+- Unit labels (e.g. "'000", "millions") must be consistent across columns
+
+### 5. REASONABLENESS
+- Large year-on-year swings (>50%) without explanation in notes
+- Suspiciously round numbers that should be calculated totals
+- Order-of-magnitude outliers vs peer line items in the same table
+
+## Instructions
+
+1. Work through EVERY page systematically
+2. Be thorough - missing errors is worse than false positives
+3. Use DOCUMENT page numbers (from headers), not PDF position
+4. Pay special attention to PRESENTATION errors — they are easy to overlook but \
+just as important as math errors. Read every label and reference, don't just check numbers.
+
+Return ONLY a JSON array of errors found:
+```json
+[
+  {
+    "id": "unique_snake_case_id",
+    "category": "cross_footing|rollforward|note_ties|presentation|reasonableness",
+    "page": 1,
+    "description": "Clear description with specific numbers showing the discrepancy"
+  }
+]
+```
+
+Return `[]` if no errors found. Return ONLY the JSON array, no other text.
+"""
+
+
 RANK_DEDUPE_PROMPT = """\
 Deduplicate and rank the following {num_candidates} error findings from a financial \
 statement review. Use the check categories below to judge severity — anything that \
@@ -576,6 +657,93 @@ async def _run_detection_pass(
     return findings, result.usage
 
 
+async def _run_detection_pass_singleshot(
+    config: RunConfig,
+    pdf_bytes: bytes,
+    pdf_name: str,
+    client: OpenRouterClient,
+    shuffle_mode: str = "random",
+    stagger_max: float = 0.0,
+    partial_results: dict | None = None,
+) -> tuple[list[dict], dict]:
+    """Run a single-shot detection pass (no tools, JSON output).
+
+    Sends one API call with the PDF and parses a JSON array of errors
+    from the response. No tool calls, no agent loop.
+
+    Args:
+        config: Run configuration with seed for shuffling
+        pdf_bytes: Original PDF bytes
+        pdf_name: Filename for the PDF
+        client: API client
+        shuffle_mode: Page reorder mode
+        stagger_max: Max random delay in seconds before starting
+        partial_results: Shared dict keyed by run_id
+
+    Returns:
+        Tuple of (findings list, usage dict)
+    """
+    # Stagger start to avoid thundering herd
+    if stagger_max > 0:
+        delay = random.uniform(0, stagger_max)
+        await asyncio.sleep(delay)
+
+    # Reorder pages based on shuffle mode
+    if shuffle_mode == "random":
+        pdf_to_send = shuffle_pdf_pages(pdf_bytes, config.seed)
+    elif shuffle_mode == "ring":
+        pdf_to_send = ring_offset_pages(pdf_bytes, config.seed)
+    else:
+        pdf_to_send = pdf_bytes
+
+    # Build message with PDF
+    pdf_b64 = base64.b64encode(pdf_to_send).decode()
+    user_content: list[dict] = [
+        {
+            "type": "file",
+            "file": {
+                "filename": pdf_name,
+                "file_data": f"data:application/pdf;base64,{pdf_b64}",
+            },
+        },
+        {"type": "text", "text": DETECT_PROMPT_SINGLESHOT},
+    ]
+
+    messages = [{"role": "user", "content": user_content}]
+
+    # Single API call — no tools
+    resp = await client.chat(model=config.model, messages=messages)
+    content = resp.get("message", {}).get("content", "")
+    usage = resp.get("usage", {})
+
+    # Parse JSON array from response
+    findings: list[dict] = []
+    try:
+        json_match = re.search(r"\[[\s\S]*\]", content)
+        if json_match:
+            parsed = json.loads(json_match.group())
+            if isinstance(parsed, list):
+                for item in parsed:
+                    if isinstance(item, dict):
+                        item["_run"] = config.run_id
+                        findings.append(item)
+    except json.JSONDecodeError as e:
+        print(
+            f"[{config.run_id}] JSON parse error: {e}",
+            file=sys.stderr,
+        )
+
+    # Register in shared partial_results
+    if partial_results is not None:
+        partial_results[config.run_id] = findings
+
+    print(
+        f"[{config.run_id}] Found {len(findings)} errors (single-shot)",
+        file=sys.stderr,
+    )
+    return findings, usage
+
+
 async def _rank_and_dedupe(
     candidates: list[dict],
     client: OpenRouterClient,
@@ -643,6 +811,8 @@ async def run_ensemble(
     prompt_style: str = "default",
     timeout: float = 1800.0,
     validate: bool = False,
+    no_tools: bool = False,
+    detect_only: bool = False,
 ) -> dict:
     """Run ensemble detection with rank/dedupe or validation.
 
@@ -685,7 +855,8 @@ async def run_ensemble(
     print(f"Pages: {num_pages}", file=sys.stderr)
 
     mode = shuffle_mode if shuffle_mode != "none" else "sequential"
-    print(f"Mode: {mode}, Prompt: {prompt_style}", file=sys.stderr)
+    detect_mode = "single-shot" if no_tools else f"tool-call ({prompt_style})"
+    print(f"Mode: {mode}, Detect: {detect_mode}", file=sys.stderr)
     race_str = (
         f" (launch {num_launch}, keep {num_runs})" if num_launch > num_runs else ""
     )
@@ -724,22 +895,39 @@ async def run_ensemble(
     partial_results: dict[str, list[dict]] = {}
 
     # Create tasks with stagger
-    tasks = [
-        asyncio.create_task(
-            _run_detection_pass(
-                config,
-                pdf_bytes,
-                pdf_path.name,
-                client,
-                shuffle_mode=shuffle_mode,
-                stagger_max=stagger_max,
-                partial_results=partial_results,
-                prompt_style=prompt_style,
-            ),
-            name=config.run_id,
-        )
-        for config in configs
-    ]
+    if no_tools:
+        tasks = [
+            asyncio.create_task(
+                _run_detection_pass_singleshot(
+                    config,
+                    pdf_bytes,
+                    pdf_path.name,
+                    client,
+                    shuffle_mode=shuffle_mode,
+                    stagger_max=stagger_max,
+                    partial_results=partial_results,
+                ),
+                name=config.run_id,
+            )
+            for config in configs
+        ]
+    else:
+        tasks = [
+            asyncio.create_task(
+                _run_detection_pass(
+                    config,
+                    pdf_bytes,
+                    pdf_path.name,
+                    client,
+                    shuffle_mode=shuffle_mode,
+                    stagger_max=stagger_max,
+                    partial_results=partial_results,
+                    prompt_style=prompt_style,
+                ),
+                name=config.run_id,
+            )
+            for config in configs
+        ]
 
     # Race: collect first num_runs successful completions, discard the rest
     all_findings = []
@@ -747,6 +935,7 @@ async def run_ensemble(
     pending = set(tasks)
     completed_count = 0
     failed_count = 0
+    run_usages: list[dict] = []  # Per-run usage tracking
 
     while pending and completed_count < num_runs:
         done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
@@ -756,7 +945,19 @@ async def run_ensemble(
                 completed_count += 1
                 completed_runs.add(task.get_name())
                 all_findings.extend(findings)
-                total_cost += _calculate_cost(usage, detect_model)
+                run_cost = _calculate_cost(usage, detect_model)
+                total_cost += run_cost
+                run_usages.append(
+                    {
+                        "run_id": task.get_name(),
+                        "prompt_tokens": usage.get("prompt_tokens", 0),
+                        "completion_tokens": usage.get("completion_tokens", 0),
+                        "reasoning_tokens": usage.get("reasoning_tokens", 0),
+                        "cached_tokens": usage.get("cached_tokens", 0),
+                        "cost_usd": round(run_cost, 4),
+                        "findings": len(findings),
+                    }
+                )
                 elapsed = time.time() - total_start
                 print(
                     f"  [{task.get_name()}] done: {len(findings)} findings "
@@ -795,6 +996,44 @@ async def run_ensemble(
         file=sys.stderr,
     )
 
+    # Detect-only: skip phase 2, dump raw findings
+    if detect_only:
+        elapsed = time.time() - total_start
+        detect_usage_agg = {
+            "prompt_tokens": sum(r["prompt_tokens"] for r in run_usages),
+            "completion_tokens": sum(r["completion_tokens"] for r in run_usages),
+            "reasoning_tokens": sum(r["reasoning_tokens"] for r in run_usages),
+            "cached_tokens": sum(r["cached_tokens"] for r in run_usages),
+            "cost_usd": round(sum(r["cost_usd"] for r in run_usages), 4),
+        }
+        result = {
+            "metadata": {
+                "strategy": "detect-only",
+                "detect_model": detect_model,
+                "num_runs": num_runs,
+                "num_launched": num_launch,
+                "stagger_max": stagger_max,
+                "input_mode": "pdf",
+                "shuffled": shuffle_mode != "none",
+                "shuffle_mode": shuffle_mode,
+                "prompt_style": "singleshot" if no_tools else prompt_style,
+                "no_tools": no_tools,
+                "num_pages": num_pages,
+                "elapsed_seconds": round(elapsed, 1),
+                "cost_usd": round(total_cost, 4),
+                "detection_usage": detect_usage_agg,
+                "run_details": run_usages,
+            },
+            "raw_findings": all_findings,
+            "summary": {"raw_findings": len(all_findings)},
+        }
+        output_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+        print(f"\n{'=' * 60}", file=sys.stderr)
+        print(f"Completed in {elapsed:.1f}s (est. ${total_cost:.4f})", file=sys.stderr)
+        print(f"Raw findings: {len(all_findings)}", file=sys.stderr)
+        print(f"Output: {output_path}", file=sys.stderr)
+        return result
+
     # Phase 2: Rank/Dedupe or Validate
     print(f"\n{'=' * 60}", file=sys.stderr)
     if validate:
@@ -810,7 +1049,17 @@ async def run_ensemble(
             client,
             validator_model=rank_model,
         )
-        total_cost += _calculate_cost(validate_usage, rank_model)
+        validate_cost = _calculate_cost(validate_usage, rank_model)
+        total_cost += validate_cost
+
+        # Aggregate detection usage from per-run data
+        detect_usage_agg = {
+            "prompt_tokens": sum(r["prompt_tokens"] for r in run_usages),
+            "completion_tokens": sum(r["completion_tokens"] for r in run_usages),
+            "reasoning_tokens": sum(r["reasoning_tokens"] for r in run_usages),
+            "cached_tokens": sum(r["cached_tokens"] for r in run_usages),
+            "cost_usd": round(sum(r["cost_usd"] for r in run_usages), 4),
+        }
 
         print(
             f"Phase 2 complete: {len(validated_issues)} validated issues",
@@ -830,10 +1079,26 @@ async def run_ensemble(
                 "input_mode": "pdf",
                 "shuffled": shuffle_mode != "none",
                 "shuffle_mode": shuffle_mode,
-                "prompt_style": prompt_style,
+                "prompt_style": "singleshot" if no_tools else prompt_style,
+                "no_tools": no_tools,
                 "num_pages": num_pages,
                 "elapsed_seconds": round(elapsed, 1),
                 "cost_usd": round(total_cost, 4),
+                "detection_usage": detect_usage_agg,
+                "validation_usage": {
+                    "prompt_tokens": validate_usage.get("prompt_tokens", 0),
+                    "completion_tokens": validate_usage.get("completion_tokens", 0),
+                    "reasoning_tokens": (
+                        validate_usage.get("completion_tokens_details") or {}
+                    ).get("reasoning_tokens", 0)
+                    or 0,
+                    "cached_tokens": (
+                        validate_usage.get("prompt_tokens_details") or {}
+                    ).get("cached_tokens", 0)
+                    or 0,
+                    "cost_usd": round(validate_cost, 4),
+                },
+                "run_details": run_usages,
             },
             "issues": validated_issues,
             "raw_findings": all_findings,
@@ -864,7 +1129,17 @@ async def run_ensemble(
             rank_model,
             detect_prompt=_get_detect_prompt(prompt_style),
         )
-        total_cost += _calculate_cost(rank_usage, rank_model)
+        rank_cost = _calculate_cost(rank_usage, rank_model)
+        total_cost += rank_cost
+
+        # Aggregate detection usage from per-run data
+        detect_usage_agg = {
+            "prompt_tokens": sum(r["prompt_tokens"] for r in run_usages),
+            "completion_tokens": sum(r["completion_tokens"] for r in run_usages),
+            "reasoning_tokens": sum(r["reasoning_tokens"] for r in run_usages),
+            "cached_tokens": sum(r["cached_tokens"] for r in run_usages),
+            "cost_usd": round(sum(r["cost_usd"] for r in run_usages), 4),
+        }
 
     high = ranked.get("high", [])
     medium = ranked.get("medium", [])
@@ -890,10 +1165,26 @@ async def run_ensemble(
             "input_mode": "pdf",
             "shuffled": shuffle_mode != "none",
             "shuffle_mode": shuffle_mode,
-            "prompt_style": prompt_style,
+            "prompt_style": "singleshot" if no_tools else prompt_style,
+            "no_tools": no_tools,
             "num_pages": num_pages,
             "elapsed_seconds": round(elapsed, 1),
             "cost_usd": round(total_cost, 4),
+            "detection_usage": detect_usage_agg,
+            "rank_usage": {
+                "prompt_tokens": rank_usage.get("prompt_tokens", 0),
+                "completion_tokens": rank_usage.get("completion_tokens", 0),
+                "reasoning_tokens": (
+                    rank_usage.get("completion_tokens_details") or {}
+                ).get("reasoning_tokens", 0)
+                or 0,
+                "cached_tokens": (rank_usage.get("prompt_tokens_details") or {}).get(
+                    "cached_tokens", 0
+                )
+                or 0,
+                "cost_usd": round(rank_cost, 4),
+            },
+            "run_details": run_usages,
         },
         "high": high,
         "medium": medium,
@@ -978,6 +1269,19 @@ async def main():
         help="Use single-shot validation instead of text-only rank/dedupe. "
         "GPT-5.2 sees the full PDF and verifies each candidate finding.",
     )
+    parser.add_argument(
+        "--no-tools",
+        action="store_true",
+        help="Single-shot detection (no tool-call loop). Each run makes one "
+        "API call and returns a JSON array of errors. Faster and cheaper "
+        "per run but no incremental logging.",
+    )
+    parser.add_argument(
+        "--detect-only",
+        action="store_true",
+        help="Run detection phase only, skip rank/validate. "
+        "Outputs raw findings for later processing.",
+    )
     args = parser.parse_args()
 
     await run_ensemble(
@@ -992,6 +1296,8 @@ async def main():
         prompt_style=args.prompt_style,
         timeout=args.timeout,
         validate=args.validate,
+        no_tools=args.no_tools,
+        detect_only=args.detect_only,
     )
 
 
