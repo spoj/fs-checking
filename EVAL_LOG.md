@@ -195,6 +195,22 @@ All evaluations use LLM-based semantic matching (`fs_checking.eval`), never page
 
 **Observation:** Large run-to-run variance (83.9% vs 97.1% recall). The ranker kept 46 vs 28 unique findings — less aggressive merging in r2 preserved more distinct errors. This confirms the ranker's merge behavior is the main source of eval variance, not detection coverage.
 
+## ar2019_fs.injected.pdf (31 errors, unrendered)
+
+### 2026-02-15 — 50x Flash, validate (single-shot)
+
+- **Config**: 50x `gemini-3-flash-preview`, single-shot detection, page shuffle random, no race, stagger 0s, validate with `openai/gpt-5.2`
+- **Eval model**: `gemini-3-flash-preview`
+- **Recall**: 28/31 (90.3%)
+- **Precision**: 100.0% (26 TP, 0 FP)
+- **F1**: 94.9%
+- **Cost**: $4.41
+- **Time**: 583s
+- **Raw findings**: 441
+- **Validated issues**: 26
+- **Missed**: inject_016, inject_021, inject_030
+- **Notes**: Validator-only flow yields perfect precision but still misses three GT issues; remaining misses appear to be harder presentation/label-level errors.
+
 ### 2026-02-08 — 25x Flash, race 30/25, RING shuffle, visual FS-only 150dpi (110 pages)
 
 - **Config**: 25x `gemini-3-flash-preview`, race 30/25, stagger 5s, `--shuffle-mode ring` (circular offset, randomized start per seed), rasterized 110 FS pages at 150dpi q70
