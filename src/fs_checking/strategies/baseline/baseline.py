@@ -18,56 +18,10 @@ import time
 from pathlib import Path
 
 from ...api import OpenRouterClient
-from ...pdf_utils import pdf_to_images, get_page_count
+from ...pdf_utils import get_page_count, pdf_to_images
+from ...prompts import DETECT_PROMPT_JSON_OUTPUT
 
 DEFAULT_MODEL = "google/gemini-3-flash-preview"
-
-DETECT_PROMPT = """\
-You are a financial statement auditor. Analyze these financial statements for errors.
-
-## Check Categories
-
-### 1. CROSS-FOOTING (Math Checks)
-- Every subtotal must equal sum of its components
-- Balance Sheet, P&L, OCI, Cash Flow subtotals
-- All subtotals within notes
-
-### 2. ROLLFORWARDS (Opening + Changes = Closing)
-- PPE, Provisions, Receivables impairment schedules
-- Check EVERY row
-
-### 3. STATEMENT - NOTE TIES
-- BS line items must tie EXACTLY to corresponding notes
-- P&L items must tie to Note breakdowns
-- CF items must tie to Note 31 reconciliations
-
-### 4. PRESENTATION
-- Title dates match column headers
-- Labels match values (positive/negative)
-- Note references are valid and sequential
-
-## Instructions
-
-1. Work through EVERY page systematically
-2. Report ALL errors found
-3. Be thorough - missing errors is worse than false positives
-
-Return ONLY a JSON array of errors found:
-```json
-[
-  {
-    "id": "unique_snake_case_id",
-    "category": "cross_footing|rollforward|note_ties|presentation|reasonableness",
-    "page": 1,
-    "description": "Clear description with specific numbers",
-    "expected": 12345,
-    "actual": 12346
-  }
-]
-```
-
-Return `[]` if no errors found. Return ONLY the JSON array, no other text.
-"""
 
 
 async def run_baseline(
@@ -126,7 +80,7 @@ async def run_baseline(
             }
         )
 
-    user_content.append({"type": "text", "text": f"\n\n{DETECT_PROMPT}"})
+    user_content.append({"type": "text", "text": f"\n\n{DETECT_PROMPT_JSON_OUTPUT}"})
 
     messages = [{"role": "user", "content": user_content}]
     client = OpenRouterClient(reasoning_effort="high", timeout=1800.0)
